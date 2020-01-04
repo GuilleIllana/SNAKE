@@ -1,12 +1,12 @@
 --cpu=Cortex-M4.fp
 "trabajo_sed\startup_stm32f407xx.o"
+"trabajo_sed\nokia5110_lcd.o"
 "trabajo_sed\main.o"
 "trabajo_sed\usb_host.o"
 "trabajo_sed\usbh_conf.o"
 "trabajo_sed\usbh_platform.o"
 "trabajo_sed\stm32f4xx_it.o"
 "trabajo_sed\stm32f4xx_hal_msp.o"
-"trabajo_sed\nokia5110_lcd.o"
 "trabajo_sed\stm32f4xx_hal_hcd.o"
 "trabajo_sed\stm32f4xx_ll_usb.o"
 "trabajo_sed\stm32f4xx_hal_rcc.o"

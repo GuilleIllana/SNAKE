@@ -21,11 +21,12 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "usb_host.h"
-#include "nokia5110_LCD.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "nokia5110_LCD.h"
+#include <stdio.h>
+#include <string.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -35,6 +36,11 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+#define MAX_X 82
+#define MAX_Y 38 //quitando el score
+#define MAX_COLUMNA 40 //Empieza en 0
+#define MAX_FILA 18 //Empieza en 0
+#define MAX_SNAKE 738 //Longitud máxima de la serpiente (ocupando todo el tablero)
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -44,6 +50,7 @@
 
 /* Private variables ---------------------------------------------------------*/
 ADC_HandleTypeDef hadc1;
+DMA_HandleTypeDef hdma_adc1;
 
 I2C_HandleTypeDef hi2c1;
 
@@ -53,6 +60,9 @@ SPI_HandleTypeDef hspi1;
 
 /* USER CODE BEGIN PV */
 int i,j;
+uint8_t X,Y;
+// buf[2];
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -62,15 +72,34 @@ static void MX_I2C1_Init(void);
 static void MX_I2S3_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_ADC1_Init(void);
+static void MX_DMA_Init(void);
 void MX_USB_HOST_Process(void);
 
 /* USER CODE BEGIN PFP */
-
+void drawFood(int pixelX, int pixelY);
+void drawTablero(int** Tab, int foodX, int foodY, int score);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
+   uint8_t buf[2];
+	 typedef enum{menu, pausa, juego}Game;
+	 
+	 typedef struct{
+	   int fila;
+		 int columna;
+	 }Posicion;
+	 
+	 typedef struct {
+	 int size;
+	 Posicion Head;
+	 int Direccion;
+	 Posicion PosAnt[];
+	 }Snake;
+	 
+	 typedef struct{
+	 Posicion pos;
+	 }Food;
 /* USER CODE END 0 */
 
 /**
@@ -80,7 +109,10 @@ void MX_USB_HOST_Process(void);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-
+  Snake Serpiente;
+	Food Comida;
+	Posicion posAnt[MAX_SNAKE];
+	int Tablero[19][41]; //0 si vacio, 1 si serpiente, 2 si comida
   /* USER CODE END 1 */
   
 
@@ -90,7 +122,11 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
-
+   Game estado = menu;
+	 for (int i = 0; i < MAX_SNAKE; i++){
+		 posAnt[i].fila = 0;
+		 posAnt[i].columna= 0;
+	 }
   /* USER CODE END Init */
 
   /* Configure the system clock */
@@ -111,27 +147,33 @@ int main(void)
   MX_SPI1_Init();
   MX_USB_HOST_Init();
   MX_ADC1_Init();
+  MX_DMA_Init();
   /* USER CODE BEGIN 2 */
-  LCD_init();
+ // LCD_init();
+	HAL_ADC_Start_DMA(&hadc1,(uint32_t *)buf, 2);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-		LCD_clrScr();
-/*		HAL_Delay(500);
+		//Pantalla 84*48 pixeles
+		//Cabeza 4 pixeles, cada fruta aumenta en dos el tamaño de la serpiente (4 pixeles +)
+		X = buf[0];
+		Y = buf[1];
+/*		LCD_clrScr();
+		HAL_Delay(500);
 		LCD_drawVLine(0,0,10);
   	LCD_refreshScr();
 		HAL_Delay(500);
 		LCD_drawHLine(0,0,50);
 		LCD_refreshScr();
 		HAL_Delay(500); */
-		for (i = 0; i < 100; i++){
+		/*for (i = 0; i < 100; i++){
 		 LCD_clrScr();
-		 LCD_print("TE AMO ERI",i,2);
+		 LCD_print("MIRA LA PANTALLA",i,2);
 		 HAL_Delay(250);
-		}
+		}*/
 	/*	for (j = 0; j < 50; j++){
 		 LCD_clrScr();
 		 LCD_drawVLine(i,j,3);
@@ -142,6 +184,7 @@ int main(void)
     MX_USB_HOST_Process();
 
     /* USER CODE BEGIN 3 */
+				
   }
   /* USER CODE END 3 */
 }
@@ -218,15 +261,15 @@ static void MX_ADC1_Init(void)
   hadc1.Instance = ADC1;
   hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV4;
   hadc1.Init.Resolution = ADC_RESOLUTION_8B;
-  hadc1.Init.ScanConvMode = DISABLE;
-  hadc1.Init.ContinuousConvMode = DISABLE;
+  hadc1.Init.ScanConvMode = ENABLE;
+  hadc1.Init.ContinuousConvMode = ENABLE;
   hadc1.Init.DiscontinuousConvMode = DISABLE;
   hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
   hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
   hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
-  hadc1.Init.NbrOfConversion = 1;
-  hadc1.Init.DMAContinuousRequests = DISABLE;
-  hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
+  hadc1.Init.NbrOfConversion = 2;
+  hadc1.Init.DMAContinuousRequests = ENABLE;
+  hadc1.Init.EOCSelection = ADC_EOC_SEQ_CONV;
   if (HAL_ADC_Init(&hadc1) != HAL_OK)
   {
     Error_Handler();
@@ -235,7 +278,15 @@ static void MX_ADC1_Init(void)
   */
   sConfig.Channel = ADC_CHANNEL_1;
   sConfig.Rank = 1;
-  sConfig.SamplingTime = ADC_SAMPLETIME_3CYCLES;
+  sConfig.SamplingTime = ADC_SAMPLETIME_480CYCLES;
+  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time. 
+  */
+  sConfig.Channel = ADC_CHANNEL_2;
+  sConfig.Rank = 2;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
     Error_Handler();
@@ -352,6 +403,22 @@ static void MX_SPI1_Init(void)
 
 }
 
+/** 
+  * Enable DMA controller clock
+  */
+static void MX_DMA_Init(void) 
+{
+
+  /* DMA controller clock enable */
+  __HAL_RCC_DMA2_CLK_ENABLE();
+
+  /* DMA interrupt init */
+  /* DMA2_Stream0_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA2_Stream0_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA2_Stream0_IRQn);
+
+}
+
 /**
   * @brief GPIO Initialization Function
   * @param None
@@ -370,84 +437,129 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOD_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOE, CS_I2C_SPI_Pin|RST_Pin|CE_Pin|DC_Pin 
-                          |DIN_Pin|CLK_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOE, GPIO_PIN_3|GPIO_PIN_7|GPIO_PIN_8|GPIO_PIN_9 
+                          |GPIO_PIN_10|GPIO_PIN_11, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(OTG_FS_PowerSwitchOn_GPIO_Port, OTG_FS_PowerSwitchOn_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_0, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOD, LD4_Pin|LD3_Pin|LD5_Pin|LD6_Pin 
-                          |Audio_RST_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12|GPIO_PIN_13|GPIO_PIN_14|GPIO_PIN_15 
+                          |GPIO_PIN_4, GPIO_PIN_RESET);
 
-  /*Configure GPIO pins : CS_I2C_SPI_Pin RST_Pin CE_Pin DC_Pin 
-                           DIN_Pin CLK_Pin */
-  GPIO_InitStruct.Pin = CS_I2C_SPI_Pin|RST_Pin|CE_Pin|DC_Pin 
-                          |DIN_Pin|CLK_Pin;
+  /*Configure GPIO pins : PE3 PE7 PE8 PE9 
+                           PE10 PE11 */
+  GPIO_InitStruct.Pin = GPIO_PIN_3|GPIO_PIN_7|GPIO_PIN_8|GPIO_PIN_9 
+                          |GPIO_PIN_10|GPIO_PIN_11;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : OTG_FS_PowerSwitchOn_Pin */
-  GPIO_InitStruct.Pin = OTG_FS_PowerSwitchOn_Pin;
+  /*Configure GPIO pin : PC0 */
+  GPIO_InitStruct.Pin = GPIO_PIN_0;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(OTG_FS_PowerSwitchOn_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : PDM_OUT_Pin */
-  GPIO_InitStruct.Pin = PDM_OUT_Pin;
+  /*Configure GPIO pin : PC3 */
+  GPIO_InitStruct.Pin = GPIO_PIN_3;
   GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   GPIO_InitStruct.Alternate = GPIO_AF5_SPI2;
-  HAL_GPIO_Init(PDM_OUT_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : B1_Pin */
-  GPIO_InitStruct.Pin = B1_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_EVT_RISING;
+  /*Configure GPIO pin : PA0 */
+  GPIO_InitStruct.Pin = GPIO_PIN_0;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(B1_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : BOOT1_Pin */
-  GPIO_InitStruct.Pin = BOOT1_Pin;
+  /*Configure GPIO pin : PB2 */
+  GPIO_InitStruct.Pin = GPIO_PIN_2;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(BOOT1_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : CLK_IN_Pin */
-  GPIO_InitStruct.Pin = CLK_IN_Pin;
+  /*Configure GPIO pin : PB10 */
+  GPIO_InitStruct.Pin = GPIO_PIN_10;
   GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   GPIO_InitStruct.Alternate = GPIO_AF5_SPI2;
-  HAL_GPIO_Init(CLK_IN_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : LD4_Pin LD3_Pin LD5_Pin LD6_Pin 
-                           Audio_RST_Pin */
-  GPIO_InitStruct.Pin = LD4_Pin|LD3_Pin|LD5_Pin|LD6_Pin 
-                          |Audio_RST_Pin;
+  /*Configure GPIO pins : PD12 PD13 PD14 PD15 
+                           PD4 */
+  GPIO_InitStruct.Pin = GPIO_PIN_12|GPIO_PIN_13|GPIO_PIN_14|GPIO_PIN_15 
+                          |GPIO_PIN_4;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : OTG_FS_OverCurrent_Pin */
-  GPIO_InitStruct.Pin = OTG_FS_OverCurrent_Pin;
+  /*Configure GPIO pin : PD5 */
+  GPIO_InitStruct.Pin = GPIO_PIN_5;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(OTG_FS_OverCurrent_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : MEMS_INT2_Pin */
-  GPIO_InitStruct.Pin = MEMS_INT2_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_EVT_RISING;
+  /*Configure GPIO pin : PE1 */
+  GPIO_InitStruct.Pin = GPIO_PIN_1;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(MEMS_INT2_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
 
 }
 
 /* USER CODE BEGIN 4 */
+void drawFood(int pixelX, int pixelY){
+	uint8_t x1,x2,y1,y2;
+	x1 = pixelX - 1;
+	x2 = pixelX + 1;
+	y1 = pixelY - 1;
+	y2 = pixelY + 1;
+	if (x1 < MAX_X - 1)
+		LCD_setPixel(x1, pixelY, true);
+	if (x2 < MAX_X - 1)
+		LCD_setPixel(x2, pixelY, true);
+	if (y1 < MAX_Y - 1)
+		LCD_setPixel(pixelX, y1, true);
+	if (y2 < MAX_Y - 1)
+		LCD_setPixel(pixelX, y2, true);
+	LCD_refreshArea(x1, y1, x2, y2);
+}
+
+void drawTablero(int** Tab, int foodX, int foodY, int score){
+ /*void LCD_refreshScr();
+void LCD_refreshArea(uint8_t xmin, uint8_t ymin, uint8_t xmax, uint8_t ymax);
+void LCD_setPixel(uint8_t x, uint8_t y, bool pixel);
+void LCD_drawHLine(int x, int y, int l);
+void LCD_drawVLine(int x, int y, int l);
+void LCD_drawLine(int x1, int y1, int x2, int y2);
+void LCD_drawRectangle(uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2);*/	
+	LCD_drawRectangle(0, 8, 48, 84);
+	for (int i = 0; i < MAX_COLUMNA; i++){
+		for (int j = 0; j < MAX_FILA; j++){
+			if (Tab[j][i] == 1){
+				LCD_drawRectangle(2*i + 3, 2*j + 11, 2*i + 4, 2*j + 12);
+				LCD_refreshArea(2*i + 3, 2*j + 11, 2*i + 4, 2*j + 12);
+			}
+			if (Tab[j][i] == 2){
+				drawFood(foodX, foodY);
+			}
+		}
+	}
+	char  num = score + '0';
+	char* puntos = "SCORE: ";
+	strcat(puntos, &num);
+	LCD_print(puntos, 10,0);
+  
+
+
+}
 
 /* USER CODE END 4 */
 
@@ -459,7 +571,7 @@ void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
   /* User can add his own implementation to report the HAL error return state */
-
+   HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_SET);
   /* USER CODE END Error_Handler_Debug */
 }
 
