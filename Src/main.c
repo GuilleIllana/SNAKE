@@ -38,8 +38,8 @@
 /* USER CODE BEGIN PD */
 #define MAX_X 82
 #define MAX_Y 38 //quitando el score
-#define MAX_COLUMNA 40 //Empieza en 0
-#define MAX_FILA 18 //Empieza en 0
+#define MAX_COLUMNA 41 
+#define MAX_FILA 19 
 #define MAX_SNAKE 738 //Longitud máxima de la serpiente (ocupando todo el tablero)
 /* USER CODE END PD */
 
@@ -77,7 +77,7 @@ void MX_USB_HOST_Process(void);
 
 /* USER CODE BEGIN PFP */
 void drawFood(int pixelX, int pixelY);
-void drawTablero(int** Tab, int foodX, int foodY, int score);
+void drawTablero(int Tab[MAX_FILA][MAX_COLUMNA], int foodX, int foodY, int score);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -123,10 +123,11 @@ int main(void)
 
   /* USER CODE BEGIN Init */
    Game estado = menu;
-	 for (int i = 0; i < MAX_SNAKE; i++){
+	//Este bucle da problemas
+	/* for (int i = 0; i < MAX_SNAKE; i++){
 		 posAnt[i].fila = 0;
 		 posAnt[i].columna= 0;
-	 }
+	 }*/ 
   /* USER CODE END Init */
 
   /* Configure the system clock */
@@ -149,8 +150,13 @@ int main(void)
   MX_ADC1_Init();
   MX_DMA_Init();
   /* USER CODE BEGIN 2 */
- // LCD_init();
-	HAL_ADC_Start_DMA(&hadc1,(uint32_t *)buf, 2);
+  LCD_init();
+	//HAL_ADC_Start_DMA(&hadc1,(uint32_t *)buf, 2);
+		//Este bucle da problemas
+	 /*for (int i = 0; i < MAX_SNAKE; i++){
+		 posAnt[i].fila = 0;
+		 posAnt[i].columna= 0;
+	 }*/
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -159,9 +165,12 @@ int main(void)
   {
 		//Pantalla 84*48 pixeles
 		//Cabeza 4 pixeles, cada fruta aumenta en dos el tamaño de la serpiente (4 pixeles +)
-		X = buf[0];
+		//LCD_clrScr();
+		drawTablero(Tablero, 50, 30, 1);
+		HAL_Delay(250);
+	/*	X = buf[0];
 		Y = buf[1];
-/*		LCD_clrScr();
+		LCD_clrScr();
 		HAL_Delay(500);
 		LCD_drawVLine(0,0,10);
   	LCD_refreshScr();
@@ -174,12 +183,7 @@ int main(void)
 		 LCD_print("MIRA LA PANTALLA",i,2);
 		 HAL_Delay(250);
 		}*/
-	/*	for (j = 0; j < 50; j++){
-		 LCD_clrScr();
-		 LCD_drawVLine(i,j,3);
-		 LCD_refreshScr();
-		 HAL_Delay(100);
-		}*/
+		
     /* USER CODE END WHILE */
     MX_USB_HOST_Process();
 
@@ -532,7 +536,7 @@ void drawFood(int pixelX, int pixelY){
 	LCD_refreshArea(x1, y1, x2, y2);
 }
 
-void drawTablero(int** Tab, int foodX, int foodY, int score){
+void drawTablero(int Tab[MAX_FILA][MAX_COLUMNA], int foodX, int foodY, int score){
  /*void LCD_refreshScr();
 void LCD_refreshArea(uint8_t xmin, uint8_t ymin, uint8_t xmax, uint8_t ymax);
 void LCD_setPixel(uint8_t x, uint8_t y, bool pixel);
@@ -541,6 +545,8 @@ void LCD_drawVLine(int x, int y, int l);
 void LCD_drawLine(int x1, int y1, int x2, int y2);
 void LCD_drawRectangle(uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2);*/	
 	LCD_drawRectangle(0, 8, 48, 84);
+	LCD_drawRectangle(1, 9, 47, 83);
+	LCD_refreshScr();
 	for (int i = 0; i < MAX_COLUMNA; i++){
 		for (int j = 0; j < MAX_FILA; j++){
 			if (Tab[j][i] == 1){
