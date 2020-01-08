@@ -42,4 +42,4 @@ trabajo_sed\main.o: ../Inc/nokia5110_LCD.h
 trabajo_sed\main.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdbool.h
 trabajo_sed\main.o: ../Inc/font.h
 trabajo_sed\main.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdio.h
-trabajo_sed\main.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\string.h
+trabajo_sed\main.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdlib.h

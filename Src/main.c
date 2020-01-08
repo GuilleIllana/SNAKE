@@ -26,7 +26,7 @@
 /* USER CODE BEGIN Includes */
 #include "nokia5110_LCD.h"
 #include <stdio.h>
-#include <string.h>
+#include <stdlib.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -36,9 +36,11 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define MAX_X 82
-#define MAX_Y 38 //quitando el score
-#define MAX_COLUMNA 41 
+#define MAX_X 81
+#define MAX_Y 45 //quitando el score
+#define MIN_X 2
+#define MIN_Y 10
+#define MAX_COLUMNA 40 
 #define MAX_FILA 19 
 #define MAX_SNAKE 738 //Longitud máxima de la serpiente (ocupando todo el tablero)
 /* USER CODE END PD */
@@ -112,7 +114,7 @@ int main(void)
   Snake Serpiente;
 	Food Comida;
 	Posicion posAnt[MAX_SNAKE];
-	int Tablero[19][41]; //0 si vacio, 1 si serpiente, 2 si comida
+	int Tablero[MAX_FILA][MAX_COLUMNA]; //0 si vacio, 1 si serpiente, 2 si comida
   /* USER CODE END 1 */
   
 
@@ -157,6 +159,13 @@ int main(void)
 		 posAnt[i].fila = 0;
 		 posAnt[i].columna= 0;
 	 }*/
+	 for (int i = 0; i < MAX_COLUMNA; i++){
+		 for (int j = 0; j < MAX_FILA; j++){
+			 Tablero[j][i] = 0;
+		 }
+	 }
+	     Tablero[18][39] = 1;
+	     Tablero[17][39] = 1;
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -166,7 +175,12 @@ int main(void)
 		//Pantalla 84*48 pixeles
 		//Cabeza 4 pixeles, cada fruta aumenta en dos el tamaño de la serpiente (4 pixeles +)
 		//LCD_clrScr();
-		drawTablero(Tablero, 50, 30, 1);
+		drawTablero(Tablero, 50, 30, 69);
+		//LCD_drawRectangle(1, 8, 83, 47);
+		//LCD_drawVLine(0,8,47);
+		//LCD_drawLine(1,8,47, 47);
+	  //LCD_drawRectangle(0, 9, 82, 47);
+		//LCD_refreshScr();
 		HAL_Delay(250);
 	/*	X = buf[0];
 		Y = buf[1];
@@ -543,28 +557,34 @@ void LCD_setPixel(uint8_t x, uint8_t y, bool pixel);
 void LCD_drawHLine(int x, int y, int l);
 void LCD_drawVLine(int x, int y, int l);
 void LCD_drawLine(int x1, int y1, int x2, int y2);
-void LCD_drawRectangle(uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2);*/	
-	LCD_drawRectangle(0, 8, 48, 84);
-	LCD_drawRectangle(1, 9, 47, 83);
-	LCD_refreshScr();
+void LCD_drawRectangle(uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2);*/
+ //Dibujo del tablero
+	LCD_drawHLine(0, 8, 84);
+  LCD_drawHLine(0, 9, 84);		
+  LCD_drawHLine(0, 47, 84);
+  LCD_drawHLine(0, 46, 84);	
+	LCD_drawVLine(0, 8, 37);
+	LCD_drawVLine(1, 8, 37);
+	LCD_drawVLine(82, 8, 37);
+	LCD_drawVLine(83, 8, 37);
 	for (int i = 0; i < MAX_COLUMNA; i++){
 		for (int j = 0; j < MAX_FILA; j++){
 			if (Tab[j][i] == 1){
-				LCD_drawRectangle(2*i + 3, 2*j + 11, 2*i + 4, 2*j + 12);
-				LCD_refreshArea(2*i + 3, 2*j + 11, 2*i + 4, 2*j + 12);
+				LCD_drawHLine(2*i + 2, 2*j + 10, 2);
+				LCD_drawHLine(2*i + 2, 2*j + 11, 2);
 			}
 			if (Tab[j][i] == 2){
 				drawFood(foodX, foodY);
 			}
 		}
 	}
-	char  num = score + '0';
+	LCD_refreshScr();
+	char  num[3];
+	sprintf(num, "%d" ,score);
 	char* puntos = "SCORE: ";
-	strcat(puntos, &num);
-	LCD_print(puntos, 10,0);
+	LCD_print(puntos, 35,0);
+	LCD_print(num, 70,0 );
   
-
-
 }
 
 /* USER CODE END 4 */
