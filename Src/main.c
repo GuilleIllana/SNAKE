@@ -31,7 +31,24 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-
+	 typedef enum{menu, pausa, juego} Game;
+	 
+	 typedef struct{
+	   int fila;
+		 int columna;
+	 }Posicion;
+	 
+	 typedef struct {
+	 int size;
+	 int dir; //0 arriba, 1 derecha, 2 abajo, 3 izquierda
+	 Posicion* Pos;
+	 }Snake;
+	 
+	 typedef struct{
+	 int x;
+	 int y;
+	 Posicion pos;
+	 }Food;
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -42,7 +59,7 @@
 #define MIN_Y 10
 #define MAX_COLUMNA 40 
 #define MAX_FILA 19 
-#define MAX_SNAKE 738 //Longitud máxima de la serpiente (ocupando todo el tablero)
+#define MAX_SNAKE 760 //Longitud máxima de la serpiente (ocupando todo el tablero)
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -80,28 +97,13 @@ void MX_USB_HOST_Process(void);
 /* USER CODE BEGIN PFP */
 void drawFood(int pixelX, int pixelY);
 void drawTablero(int Tab[MAX_FILA][MAX_COLUMNA], int foodX, int foodY, int score);
+void SnakePos(int** Tab, Snake* snake);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
    uint8_t buf[2];
-	 typedef enum{menu, pausa, juego}Game;
-	 
-	 typedef struct{
-	   int fila;
-		 int columna;
-	 }Posicion;
-	 
-	 typedef struct {
-	 int size;
-	 Posicion Head;
-	 int Direccion;
-	 Posicion PosAnt[];
-	 }Snake;
-	 
-	 typedef struct{
-	 Posicion pos;
-	 }Food;
+   
 /* USER CODE END 0 */
 
 /**
@@ -113,7 +115,6 @@ int main(void)
   /* USER CODE BEGIN 1 */
   Snake Serpiente;
 	Food Comida;
-	Posicion posAnt[MAX_SNAKE];
 	int Tablero[MAX_FILA][MAX_COLUMNA]; //0 si vacio, 1 si serpiente, 2 si comida
   /* USER CODE END 1 */
   
@@ -125,11 +126,16 @@ int main(void)
 
   /* USER CODE BEGIN Init */
    Game estado = menu;
-	//Este bucle da problemas
-	/* for (int i = 0; i < MAX_SNAKE; i++){
-		 posAnt[i].fila = 0;
-		 posAnt[i].columna= 0;
-	 }*/ 
+  
+	 Serpiente.Pos->fila = MAX_FILA/2;
+	 Serpiente.Pos->columna = MAX_COLUMNA/2;
+	
+	 for (int i = 1; i < MAX_SNAKE; i++){
+		 (Serpiente.Pos + i)->fila = -1;
+		 (Serpiente.Pos + i)->columna = -1;
+	 }
+	 
+
   /* USER CODE END Init */
 
   /* Configure the system clock */
@@ -154,18 +160,13 @@ int main(void)
   /* USER CODE BEGIN 2 */
   LCD_init();
 	//HAL_ADC_Start_DMA(&hadc1,(uint32_t *)buf, 2);
-		//Este bucle da problemas
-	 /*for (int i = 0; i < MAX_SNAKE; i++){
-		 posAnt[i].fila = 0;
-		 posAnt[i].columna= 0;
-	 }*/
+
+	 
 	 for (int i = 0; i < MAX_COLUMNA; i++){
 		 for (int j = 0; j < MAX_FILA; j++){
 			 Tablero[j][i] = 0;
 		 }
 	 }
-	     Tablero[18][39] = 1;
-	     Tablero[17][39] = 1;
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -174,29 +175,17 @@ int main(void)
   {
 		//Pantalla 84*48 pixeles
 		//Cabeza 4 pixeles, cada fruta aumenta en dos el tamaño de la serpiente (4 pixeles +)
-		//LCD_clrScr();
-		drawTablero(Tablero, 50, 30, 69);
-		//LCD_drawRectangle(1, 8, 83, 47);
-		//LCD_drawVLine(0,8,47);
-		//LCD_drawLine(1,8,47, 47);
-	  //LCD_drawRectangle(0, 9, 82, 47);
-		//LCD_refreshScr();
-		HAL_Delay(250);
-	/*	X = buf[0];
-		Y = buf[1];
-		LCD_clrScr();
-		HAL_Delay(500);
-		LCD_drawVLine(0,0,10);
-  	LCD_refreshScr();
-		HAL_Delay(500);
-		LCD_drawHLine(0,0,50);
-		LCD_refreshScr();
-		HAL_Delay(500); */
-		/*for (i = 0; i < 100; i++){
-		 LCD_clrScr();
-		 LCD_print("MIRA LA PANTALLA",i,2);
-		 HAL_Delay(250);
-		}*/
+
+ for(int i = 0; i < MAX_COLUMNA; i++){
+	 for(int j = 0; j < MAX_FILA; j++){
+		 Tablero[j][i] = 1;
+		 drawTablero(Tablero, 50, 30, 69);
+		 HAL_Delay(50);
+		  Tablero[j][i] = 0;
+	 } 
+ }
+//		X = buf[0];
+//		Y = buf[1];
 		
     /* USER CODE END WHILE */
     MX_USB_HOST_Process();
@@ -551,13 +540,15 @@ void drawFood(int pixelX, int pixelY){
 }
 
 void drawTablero(int Tab[MAX_FILA][MAX_COLUMNA], int foodX, int foodY, int score){
- /*void LCD_refreshScr();
-void LCD_refreshArea(uint8_t xmin, uint8_t ymin, uint8_t xmax, uint8_t ymax);
-void LCD_setPixel(uint8_t x, uint8_t y, bool pixel);
-void LCD_drawHLine(int x, int y, int l);
-void LCD_drawVLine(int x, int y, int l);
-void LCD_drawLine(int x1, int y1, int x2, int y2);
-void LCD_drawRectangle(uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2);*/
+  char  num[3];
+	
+	//Paso de int a char* (impresión de la puntuación)
+	sprintf(num, "%d" ,score);
+	char* puntos = "SCORE: ";
+	
+ //Limpieza de la pantalla
+	LCD_clrScr();
+	
  //Dibujo del tablero
 	LCD_drawHLine(0, 8, 84);
   LCD_drawHLine(0, 9, 84);		
@@ -567,6 +558,8 @@ void LCD_drawRectangle(uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2);*/
 	LCD_drawVLine(1, 8, 37);
 	LCD_drawVLine(82, 8, 37);
 	LCD_drawVLine(83, 8, 37);
+		
+	//Dibujo del tablero
 	for (int i = 0; i < MAX_COLUMNA; i++){
 		for (int j = 0; j < MAX_FILA; j++){
 			if (Tab[j][i] == 1){
@@ -579,12 +572,28 @@ void LCD_drawRectangle(uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2);*/
 		}
 	}
 	LCD_refreshScr();
-	char  num[3];
-	sprintf(num, "%d" ,score);
-	char* puntos = "SCORE: ";
+	
+	//Dibujo de la puntuación
 	LCD_print(puntos, 35,0);
 	LCD_print(num, 70,0 );
-  
+}
+
+void SnakePos(int** Tab, Snake* snake) {
+	switch (snake->dir) {
+		case 0: break;
+		case 1: break;
+		case 2: break;
+		case 3: break;
+		default: break;
+	}
+	
+	for (int i = 0; i < snake->size; i++)
+		 Tab[snake->Pos[i].fila][snake->Pos[i].columna] = 1;
+	
+	Tab[snake->Pos[snake->size].fila][snake->Pos[snake->size].columna] = 0;
+	snake->Pos[snake->size].fila = -1;
+	snake->Pos[snake->size].columna = -1;
+	
 }
 
 /* USER CODE END 4 */
