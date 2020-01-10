@@ -3,7 +3,7 @@
 <title>Static Call Graph - [TRABAJO_SED\TRABAJO_SED.axf]</title></head>
 <body><HR>
 <H1>Static Call Graph for image TRABAJO_SED\TRABAJO_SED.axf</H1><HR>
-<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 5060750: Last Updated: Fri Jan 10 15:05:51 2020
+<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 5060750: Last Updated: Fri Jan 10 20:20:21 2020
 <BR><P>
 <H3>Maximum Stack Usage =       3344 bytes + Unknown(Cycles, Untraceable Function Pointers)</H3><H3>
 Call chain for Maximum Stack Depth:</H3>
@@ -1093,8 +1093,8 @@ Global Symbols
 <P><STRONG><a name="[6]"></a>SVC_Handler</STRONG> (Thumb, 2 bytes, Stack size 0 bytes, stm32f4xx_it.o(i.SVC_Handler))
 <BR>[Address Reference Count : 1]<UL><LI> startup_stm32f407xx.o(RESET)
 </UL>
-<P><STRONG><a name="[e6]"></a>SnakePos</STRONG> (Thumb, 220 bytes, Stack size 24 bytes, main.o(i.SnakePos))
-<BR><BR>[Stack]<UL><LI>Max Depth = 44<LI>Call Chain = SnakePos &rArr; malloc
+<P><STRONG><a name="[e6]"></a>SnakePos</STRONG> (Thumb, 300 bytes, Stack size 32 bytes, main.o(i.SnakePos))
+<BR><BR>[Stack]<UL><LI>Max Depth = 52<LI>Call Chain = SnakePos &rArr; malloc
 </UL>
 <BR>[Calls]<UL><LI><a href="#[e7]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;malloc
 <LI><a href="#[e8]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;free
@@ -1682,7 +1682,7 @@ Global Symbols
 <LI><a href="#[63]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;USBH_CDC_InterfaceDeInit
 </UL>
 
-<P><STRONG><a name="[5b]"></a>main</STRONG> (Thumb, 250 bytes, Stack size 3064 bytes, main.o(i.main))
+<P><STRONG><a name="[5b]"></a>main</STRONG> (Thumb, 282 bytes, Stack size 3064 bytes, main.o(i.main))
 <BR><BR>[Stack]<UL><LI>Max Depth = 3344<LI>Call Chain = main &rArr; MX_USB_HOST_Process &rArr; USBH_Process &rArr; USBH_HandleEnum &rArr; USBH_Get_StringDesc &rArr; USBH_GetDescriptor &rArr; USBH_CtlReq &rArr; USBH_HandleControl &rArr; USBH_CtlSendData &rArr; USBH_LL_SubmitURB &rArr; HAL_HCD_HC_SubmitRequest &rArr; USB_HC_StartXfer &rArr; USB_WritePacket
 </UL>
 <BR>[Calls]<UL><LI><a href="#[e4]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;MX_USB_HOST_Process
@@ -1705,13 +1705,15 @@ Global Symbols
 <LI><a href="#[121]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;LCD_setCLK
 <LI><a href="#[11e]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;LCD_setCE
 <LI><a href="#[d3]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;LCD_init
+<LI><a href="#[e7]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;malloc
 </UL>
 <BR>[Address Reference Count : 1]<UL><LI> entry9a.o(.ARM.Collect$$$$0000000B)
 </UL>
 <P><STRONG><a name="[e7]"></a>malloc</STRONG> (Thumb, 92 bytes, Stack size 20 bytes, malloc.o(i.malloc))
 <BR><BR>[Stack]<UL><LI>Max Depth = 20<LI>Call Chain = malloc
 </UL>
-<BR>[Called By]<UL><LI><a href="#[e6]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;SnakePos
+<BR>[Called By]<UL><LI><a href="#[5b]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;main
+<LI><a href="#[e6]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;SnakePos
 <LI><a href="#[62]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;USBH_CDC_InterfaceInit
 </UL>
 <P>

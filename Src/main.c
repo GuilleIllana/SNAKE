@@ -126,17 +126,18 @@ int main(void)
 
   /* USER CODE BEGIN Init */
    Game estado = menu;
-
-	
-	 for (int i = 1; i < MAX_SNAKE; i++){
-		 (Serpiente.Pos + i)->fila = -1;
-		 (Serpiente.Pos + i)->columna = -1;
+//inicialización del vector de posiciones
+	Serpiente.Pos = malloc(MAX_SNAKE * sizeof(Posicion));
+	 for (int i = 0; i < MAX_SNAKE; i++){
+		 Serpiente.Pos[i].fila = -1;
+		 Serpiente.Pos[i].columna = -1;
 	 }
-	 Serpiente.Pos->fila = 10;
-	 Serpiente.Pos->columna = 20;
+	 Serpiente.Pos[0].fila = 10;
+	 Serpiente.Pos[0].columna = 20;
 	 Serpiente.dir = 0;
 	 Serpiente.size = 1;
-
+	volatile int compm = Serpiente.Pos[0].fila;
+  volatile int comp2m = Serpiente.Pos[0].columna;
   /* USER CODE END Init */
 
   /* Configure the system clock */
@@ -594,7 +595,8 @@ void SnakePos(int Tab[MAX_FILA][MAX_COLUMNA], Snake* snake) {
 		snake->Pos[i + 1].fila = aux_fila[i];
 		snake->Pos[i + 1].columna = aux_columna[i];
 	}
-	
+	volatile int comp = snake->Pos[0].fila;
+ volatile int comp2 = snake->Pos[0].columna;
 	switch (snake->dir) {
 		case 0:
 			snake->Pos[0].columna = snake->Pos[0].columna + 1;
@@ -618,17 +620,16 @@ void SnakePos(int Tab[MAX_FILA][MAX_COLUMNA], Snake* snake) {
 			break;
 	}
 
-	
 	if (snake->Pos[0].fila == MAX_FILA) snake->Pos[0].fila = MAX_FILA - 1; 
 	if (snake->Pos[0].columna == MAX_COLUMNA) snake->Pos[0].columna = MAX_COLUMNA - 1; 
 		//No consigo encontrar el fallo aquí. Se queda atascado
-	/*
+	
 	for (int i = 0; i < snake->size; i++){
 		 Tab[snake->Pos[i].fila][snake->Pos[i].columna] = 1;
 	}
 
 	Tab[snake->Pos[snake->size].fila][snake->Pos[snake->size].columna] = 0;
-	*/
+	
 	snake->Pos[snake->size].fila = -1;
 	snake->Pos[snake->size].columna = -1;
 
