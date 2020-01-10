@@ -1380,7 +1380,7 @@
       <Window>
         <RegID>50004</RegID>
         <PaneID>50004</PaneID>
-        <IsVisible>0</IsVisible>
+        <IsVisible>1</IsVisible>
         <IsFloating>0</IsFloating>
         <IsTabbed>0</IsTabbed>
         <IsActivated>0</IsActivated>
@@ -1390,11 +1390,11 @@
         <RecentRowIndex>0</RecentRowIndex>
         <RectRecentDocked>
           <Len>16</Len>
-          <Data>A3040000660000008D05000010020000</Data>
+          <Data>F7000000660000008D05000081000000</Data>
         </RectRecentDocked>
         <RectRecentFloat>
           <Len>16</Len>
-          <Data>BE000000D5000000AE010000A0010000</Data>
+          <Data>0A0000000A0000006E0000006E000000</Data>
         </RectRecentFloat>
       </Window>
       <Window>
@@ -3606,9 +3606,9 @@
       <ActiveTab>0</ActiveTab>
       <Doc>
         <Name>../Src/main.c</Name>
-        <ColumnNumber>1</ColumnNumber>
-        <TopLine>565</TopLine>
-        <CurrentLine>597</CurrentLine>
+        <ColumnNumber>3</ColumnNumber>
+        <TopLine>588</TopLine>
+        <CurrentLine>619</CurrentLine>
         <Folding>1</Folding>
         <ContractedFolders></ContractedFolders>
         <PaneID>0</PaneID>
@@ -3634,7 +3634,7 @@
       <Doc>
         <Name>..\Src\nokia5110_LCD.c</Name>
         <ColumnNumber>21</ColumnNumber>
-        <TopLine>123</TopLine>
+        <TopLine>163</TopLine>
         <CurrentLine>206</CurrentLine>
         <Folding>1</Folding>
         <ContractedFolders></ContractedFolders>

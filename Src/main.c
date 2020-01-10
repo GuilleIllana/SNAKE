@@ -31,7 +31,7 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-	 typedef enum{menu, pausa, juego} Game;
+	 typedef enum{menu, pausa, juego, muerto} Game;
 	 
 	 typedef struct{
 	   int fila;
@@ -97,7 +97,7 @@ void MX_USB_HOST_Process(void);
 /* USER CODE BEGIN PFP */
 void drawFood(int pixelX, int pixelY);
 void drawTablero(int Tab[MAX_FILA][MAX_COLUMNA], int foodX, int foodY, int score);
-void SnakePos(int** Tab, Snake* snake);
+void SnakePos(int Tab[MAX_FILA][MAX_COLUMNA], Snake* snake);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -126,15 +126,16 @@ int main(void)
 
   /* USER CODE BEGIN Init */
    Game estado = menu;
-  
-	 Serpiente.Pos->fila = MAX_FILA/2;
-	 Serpiente.Pos->columna = MAX_COLUMNA/2;
+
 	
 	 for (int i = 1; i < MAX_SNAKE; i++){
 		 (Serpiente.Pos + i)->fila = -1;
 		 (Serpiente.Pos + i)->columna = -1;
 	 }
-	 
+	 Serpiente.Pos->fila = 10;
+	 Serpiente.Pos->columna = 20;
+	 Serpiente.dir = 0;
+	 Serpiente.size = 1;
 
   /* USER CODE END Init */
 
@@ -175,15 +176,20 @@ int main(void)
   {
 		//Pantalla 84*48 pixeles
 		//Cabeza 4 pixeles, cada fruta aumenta en dos el tamaño de la serpiente (4 pixeles +)
-
- for(int i = 0; i < MAX_COLUMNA; i++){
+  SnakePos(Tablero, &Serpiente);
+  drawTablero(Tablero, 50, 30, 69);
+	HAL_Delay(500);
+	
+ /*for(int i = 0; i < MAX_COLUMNA; i++){
 	 for(int j = 0; j < MAX_FILA; j++){
 		 Tablero[j][i] = 1;
 		 drawTablero(Tablero, 50, 30, 69);
-		 HAL_Delay(50);
+ 	   HAL_Delay(100);
 		  Tablero[j][i] = 0;
 	 } 
- }
+ }*/
+
+ 
 //		X = buf[0];
 //		Y = buf[1];
 		
@@ -578,22 +584,54 @@ void drawTablero(int Tab[MAX_FILA][MAX_COLUMNA], int foodX, int foodY, int score
 	LCD_print(num, 70,0 );
 }
 
-void SnakePos(int** Tab, Snake* snake) {
-	switch (snake->dir) {
-		case 0: break;
-		case 1: break;
-		case 2: break;
-		case 3: break;
-		default: break;
+void SnakePos(int Tab[MAX_FILA][MAX_COLUMNA], Snake* snake) {
+	int aux_fila[snake->size], aux_columna[snake->size]; 
+	for (int i = 0; i < snake->size; i++){
+		aux_fila[i] = snake->Pos[i].fila;
+		aux_columna[i] = snake->Pos[i].columna;
+	}
+	for (int i = 0; i < snake->size; i++){
+		snake->Pos[i + 1].fila = aux_fila[i];
+		snake->Pos[i + 1].columna = aux_columna[i];
 	}
 	
-	for (int i = 0; i < snake->size; i++)
-		 Tab[snake->Pos[i].fila][snake->Pos[i].columna] = 1;
+	switch (snake->dir) {
+		case 0:
+			snake->Pos[0].columna = snake->Pos[0].columna + 1;
+			
+		
+			break;
+		case 1:
+			snake->Pos[0].fila = snake->Pos[0].fila + 1;
+			
+			break;
+		case 2: 
+			snake->Pos[0].columna = snake->Pos[0].columna - 1;
+			break;
+		
+		case 3:
+			snake->Pos[0].fila = snake->Pos[0].fila - 1;
+			
+			break;
+		default: 
+			
+			break;
+	}
+
 	
+	if (snake->Pos[0].fila == MAX_FILA) snake->Pos[0].fila = MAX_FILA - 1; 
+	if (snake->Pos[0].columna == MAX_COLUMNA) snake->Pos[0].columna = MAX_COLUMNA - 1; 
+		//No consigo encontrar el fallo aquí. Se queda atascado
+	/*
+	for (int i = 0; i < snake->size; i++){
+		 Tab[snake->Pos[i].fila][snake->Pos[i].columna] = 1;
+	}
+
 	Tab[snake->Pos[snake->size].fila][snake->Pos[snake->size].columna] = 0;
+	*/
 	snake->Pos[snake->size].fila = -1;
 	snake->Pos[snake->size].columna = -1;
-	
+
 }
 
 /* USER CODE END 4 */
