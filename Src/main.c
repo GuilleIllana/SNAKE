@@ -97,7 +97,7 @@ void MX_USB_HOST_Process(void);
 /* USER CODE BEGIN PFP */
 void drawFood(int pixelX, int pixelY);
 void drawTablero(int Tab[MAX_FILA][MAX_COLUMNA], int foodX, int foodY, int score);
-void SnakePos(int(*Tab)[MAX_COLUMNA], Snake* snake);
+void SnakePos(int** Tab, Snake* snake);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -175,14 +175,13 @@ int main(void)
   {
 		//Pantalla 84*48 pixeles
 		//Cabeza 4 pixeles, cada fruta aumenta en dos el tamaño de la serpiente (4 pixeles +)
-  SnakePos(Tablero, &Serpiente);
-  drawTablero(Tablero, 50, 30, 69);
+
  for(int i = 0; i < MAX_COLUMNA; i++){
 	 for(int j = 0; j < MAX_FILA; j++){
 		 Tablero[j][i] = 1;
 		 drawTablero(Tablero, 50, 30, 69);
 		 HAL_Delay(50);
-		 Tablero[j][i] = 0;
+		  Tablero[j][i] = 0;
 	 } 
  }
 //		X = buf[0];
@@ -579,7 +578,7 @@ void drawTablero(int Tab[MAX_FILA][MAX_COLUMNA], int foodX, int foodY, int score
 	LCD_print(num, 70,0 );
 }
 
-void SnakePos(int (*Tab)[MAX_COLUMNA], Snake* snake) {
+void SnakePos(int** Tab, Snake* snake) {
 	switch (snake->dir) {
 		case 0: break;
 		case 1: break;
@@ -588,14 +587,13 @@ void SnakePos(int (*Tab)[MAX_COLUMNA], Snake* snake) {
 		default: break;
 	}
 	
-/*	for (int i = 0; i < snake->size; i++)
+	for (int i = 0; i < snake->size; i++)
 		 Tab[snake->Pos[i].fila][snake->Pos[i].columna] = 1;
 	
 	Tab[snake->Pos[snake->size].fila][snake->Pos[snake->size].columna] = 0;
 	snake->Pos[snake->size].fila = -1;
 	snake->Pos[snake->size].columna = -1;
-	*/
-	Tab[MAX_FILA-1][MAX_COLUMNA-1] = 1;
+	
 }
 
 /* USER CODE END 4 */
