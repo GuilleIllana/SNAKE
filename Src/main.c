@@ -126,18 +126,7 @@ int main(void)
 
   /* USER CODE BEGIN Init */
    Game estado = menu;
-//inicialización del vector de posiciones
-	Serpiente.Pos = malloc(MAX_SNAKE * sizeof(Posicion));
-	 for (int i = 0; i < MAX_SNAKE; i++){
-		 Serpiente.Pos[i].fila = -1;
-		 Serpiente.Pos[i].columna = -1;
-	 }
-	 Serpiente.Pos[0].fila = 10;
-	 Serpiente.Pos[0].columna = 20;
-	 Serpiente.dir = 0;
-	 Serpiente.size = 1;
-	volatile int compm = Serpiente.Pos[0].fila;
-  volatile int comp2m = Serpiente.Pos[0].columna;
+
   /* USER CODE END Init */
 
   /* Configure the system clock */
@@ -169,6 +158,19 @@ int main(void)
 			 Tablero[j][i] = 0;
 		 }
 	 }
+	 
+	 //inicialización del vector de posiciones
+	Serpiente.Pos = malloc(MAX_SNAKE * sizeof(Posicion));
+	 for (int i = 0; i < MAX_SNAKE; i++){
+		 Serpiente.Pos[i].fila = -1;
+		 Serpiente.Pos[i].columna = -1;
+	 }
+	 Serpiente.Pos[0].fila = 10;
+	 Serpiente.Pos[0].columna = 20;
+	 Serpiente.dir = 0;
+	 Serpiente.size = 1;
+	volatile int compm = Serpiente.Pos[0].fila;
+  volatile int comp2m = Serpiente.Pos[0].columna;
   /* USER CODE END 2 */
 
   /* Infinite loop */
