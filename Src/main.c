@@ -103,7 +103,8 @@ void drawMenu();
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
    uint8_t buf[2];
-   
+   uint8_t ADC_X = 0;
+   uint8_t ADC_Y = 0;
 /* USER CODE END 0 */
 
 /**
@@ -150,7 +151,8 @@ int main(void)
   MX_ADC2_Init();
   /* USER CODE BEGIN 2 */
   LCD_init();
-	//HAL_ADC_Start_DMA(&hadc1,(uint32_t *)buf, 2);
+	HAL_ADC_Start_IT(&hadc1);
+	HAL_ADC_Start_IT(&hadc2);
 
 	
 	 for (int i = 0; i < MAX_COLUMNA; i++){
@@ -177,9 +179,9 @@ int main(void)
 		//Pantalla 84*48 pixeles
 		//Cabeza 4 pixeles, cada fruta aumenta en dos el tamaño de la serpiente (4 pixeles +)
     
-		SnakePos(Tablero, &Serpiente);
+		/*SnakePos(Tablero, &Serpiente);
     drawTablero(Tablero, 50, 30, 69);
-	  HAL_Delay(500);
+	  HAL_Delay(500);*/
 	
  /*for(int i = 0; i < MAX_COLUMNA; i++){
 	 for(int j = 0; j < MAX_FILA; j++){
@@ -276,14 +278,14 @@ static void MX_ADC1_Init(void)
   hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV4;
   hadc1.Init.Resolution = ADC_RESOLUTION_8B;
   hadc1.Init.ScanConvMode = DISABLE;
-  hadc1.Init.ContinuousConvMode = DISABLE;
+  hadc1.Init.ContinuousConvMode = ENABLE;
   hadc1.Init.DiscontinuousConvMode = DISABLE;
   hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
   hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
   hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
   hadc1.Init.NbrOfConversion = 1;
   hadc1.Init.DMAContinuousRequests = DISABLE;
-  hadc1.Init.EOCSelection = ADC_EOC_SEQ_CONV;
+  hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
   if (HAL_ADC_Init(&hadc1) != HAL_OK)
   {
     Error_Handler();
@@ -680,6 +682,14 @@ void SnakePos(uint8_t Tab[MAX_FILA][MAX_COLUMNA], Snake* snake) {
 	snake->Pos[snake->size].columna = 0;
 
 }
+ void HAL_ADC_ConvCpltCalBack(ADC_HandleTypeDef *hadc) {
+	
+	 ADC_X = HAL_ADC_GetValue(&hadc1);
+	 ADC_Y= HAL_ADC_GetValue(&hadc2);
+	 
+
+ }
+ 
 
 /* USER CODE END 4 */
 
