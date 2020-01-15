@@ -152,9 +152,9 @@
         <Bp>
           <Number>0</Number>
           <Type>0</Type>
-          <LineNumber>173</LineNumber>
+          <LineNumber>636</LineNumber>
           <EnabledFlag>1</EnabledFlag>
-          <Address>134235974</Address>
+          <Address>134229504</Address>
           <ByteObject>0</ByteObject>
           <HtxType>0</HtxType>
           <ManyObjects>0</ManyObjects>
@@ -163,7 +163,7 @@
           <BreakIfRCount>1</BreakIfRCount>
           <Filename>../Src/main.c</Filename>
           <ExecCommand></ExecCommand>
-          <Expression>\\TRABAJO_SED\../Src/main.c\173</Expression>
+          <Expression>\\TRABAJO_SED\../Src/main.c\636</Expression>
         </Bp>
       </Breakpoint>
       <WatchWindow1>
@@ -186,6 +186,16 @@
           <count>3</count>
           <WinNumber>1</WinNumber>
           <ItemText>comp2</ItemText>
+        </Ww>
+        <Ww>
+          <count>4</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>snake-&gt;Pos[0].fila</ItemText>
+        </Ww>
+        <Ww>
+          <count>5</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>snake-&gt;Pos[0].columna</ItemText>
         </Ww>
       </WatchWindow1>
       <WatchWindow2>

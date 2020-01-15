@@ -34,20 +34,20 @@
 	 typedef enum{menu, pausa, juego, muerto} Game;
 	 
 	 typedef struct{
-	   int fila;
-		 int columna;
+	   uint8_t fila;
+		 uint8_t columna;
 	 }Posicion;
 	 
 	 typedef struct {
-	 int size;
-	 int dir; //0 arriba, 1 derecha, 2 abajo, 3 izquierda
-	 Posicion* Pos;
+	  uint8_t size;
+	  uint8_t dir; //0 arriba, 1 derecha, 2 abajo, 3 izquierda
+	  Posicion* Pos;
 	 }Snake;
 	 
 	 typedef struct{
-	 int x;
-	 int y;
-	 Posicion pos;
+	  uint8_t x;
+	  uint8_t y;
+	  Posicion pos;
 	 }Food;
 /* USER CODE END PTD */
 
@@ -95,9 +95,9 @@ static void MX_DMA_Init(void);
 void MX_USB_HOST_Process(void);
 
 /* USER CODE BEGIN PFP */
-void drawFood(int pixelX, int pixelY);
-void drawTablero(int Tab[MAX_FILA][MAX_COLUMNA], int foodX, int foodY, int score);
-void SnakePos(int Tab[MAX_FILA][MAX_COLUMNA], Snake* snake);
+void drawFood(uint8_t pixelX, uint8_t pixelY);
+void drawTablero(uint8_t Tab[MAX_FILA][MAX_COLUMNA], uint8_t foodX, uint8_t foodY, uint8_t score);
+void SnakePos(uint8_t Tab[MAX_FILA][MAX_COLUMNA], Snake* snake);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -115,7 +115,7 @@ int main(void)
   /* USER CODE BEGIN 1 */
   Snake Serpiente;
 	Food Comida;
-	int Tablero[MAX_FILA][MAX_COLUMNA]; //0 si vacio, 1 si serpiente, 2 si comida
+	uint8_t Tablero[MAX_FILA][MAX_COLUMNA]; //0 si vacio, 1 si serpiente, 2 si comida
   /* USER CODE END 1 */
   
 
@@ -162,15 +162,13 @@ int main(void)
 	 //inicialización del vector de posiciones
 	Serpiente.Pos = malloc(MAX_SNAKE * sizeof(Posicion));
 	 for (int i = 0; i < MAX_SNAKE; i++){
-		 Serpiente.Pos[i].fila = -1;
-		 Serpiente.Pos[i].columna = -1;
+		 Serpiente.Pos[i].fila = 0;
+		 Serpiente.Pos[i].columna = 0;
 	 }
-	 Serpiente.Pos[0].fila = 10;
-	 Serpiente.Pos[0].columna = 20;
-	 Serpiente.dir = 0;
+	 Serpiente.Pos[0].fila = 50;
+	 Serpiente.Pos[0].columna = 50;
+	 Serpiente.dir = 1;
 	 Serpiente.size = 1;
-	volatile int compm = Serpiente.Pos[0].fila;
-  volatile int comp2m = Serpiente.Pos[0].columna;
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -531,7 +529,7 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-void drawFood(int pixelX, int pixelY){
+void drawFood(uint8_t pixelX, uint8_t pixelY){
 	uint8_t x1,x2,y1,y2;
 	x1 = pixelX - 1;
 	x2 = pixelX + 1;
@@ -548,7 +546,7 @@ void drawFood(int pixelX, int pixelY){
 	LCD_refreshArea(x1, y1, x2, y2);
 }
 
-void drawTablero(int Tab[MAX_FILA][MAX_COLUMNA], int foodX, int foodY, int score){
+void drawTablero(uint8_t Tab[MAX_FILA][MAX_COLUMNA], uint8_t foodX, uint8_t foodY, uint8_t score){
   char  num[3];
 	
 	//Paso de int a char* (impresión de la puntuación)
@@ -587,7 +585,7 @@ void drawTablero(int Tab[MAX_FILA][MAX_COLUMNA], int foodX, int foodY, int score
 	LCD_print(num, 70,0 );
 }
 
-void SnakePos(int Tab[MAX_FILA][MAX_COLUMNA], Snake* snake) {
+void SnakePos(uint8_t Tab[MAX_FILA][MAX_COLUMNA], Snake* snake) {
 	int aux_fila[snake->size], aux_columna[snake->size]; 
 	for (int i = 0; i < snake->size; i++){
 		aux_fila[i] = snake->Pos[i].fila;
@@ -632,8 +630,8 @@ void SnakePos(int Tab[MAX_FILA][MAX_COLUMNA], Snake* snake) {
 
 	Tab[snake->Pos[snake->size].fila][snake->Pos[snake->size].columna] = 0;
 	
-	snake->Pos[snake->size].fila = -1;
-	snake->Pos[snake->size].columna = -1;
+	snake->Pos[snake->size].fila = 0;
+	snake->Pos[snake->size].columna = 0;
 
 }
 
