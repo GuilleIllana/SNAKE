@@ -32,7 +32,7 @@
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
 	 typedef enum{menu, pausa, juego, muerto} Game;
-	 
+	 typedef enum{inicio, como}Estado_menu;
 	 typedef struct{
 	   uint8_t fila;
 		 uint8_t columna;
@@ -78,9 +78,7 @@ I2S_HandleTypeDef hi2s3;
 SPI_HandleTypeDef hspi1;
 
 /* USER CODE BEGIN PV */
-int i,j;
-uint8_t X,Y;
-// buf[2];
+
 
 /* USER CODE END PV */
 
@@ -98,6 +96,8 @@ void MX_USB_HOST_Process(void);
 void drawFood(uint8_t pixelX, uint8_t pixelY);
 void drawTablero(uint8_t Tab[MAX_FILA][MAX_COLUMNA], uint8_t foodX, uint8_t foodY, uint8_t score);
 void SnakePos(uint8_t Tab[MAX_FILA][MAX_COLUMNA], Snake* snake);
+void Dibujo(Game *estado);
+void drawMenu();
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -152,21 +152,20 @@ int main(void)
   LCD_init();
 	//HAL_ADC_Start_DMA(&hadc1,(uint32_t *)buf, 2);
 
-	 
+	
 	 for (int i = 0; i < MAX_COLUMNA; i++){
 		 for (int j = 0; j < MAX_FILA; j++){
 			 Tablero[j][i] = 0;
 		 }
 	 }
-	 
 	 //inicialización del vector de posiciones
 	Serpiente.Pos = malloc(MAX_SNAKE * sizeof(Posicion));
-	 for (int i = 0; i < MAX_SNAKE; i++){
+	/* for (int i = 0; i < MAX_SNAKE; i++){
 		 Serpiente.Pos[i].fila = 0;
 		 Serpiente.Pos[i].columna = 0;
-	 }
+	 }*/
 	 Serpiente.Pos[0].fila = 50;
-	 Serpiente.Pos[0].columna = 50;
+	 (Serpiente.Pos[0].columna) = 50;
 	 Serpiente.dir = 1;
 	 Serpiente.size = 1;
   /* USER CODE END 2 */
@@ -177,9 +176,10 @@ int main(void)
   {
 		//Pantalla 84*48 pixeles
 		//Cabeza 4 pixeles, cada fruta aumenta en dos el tamaño de la serpiente (4 pixeles +)
-  SnakePos(Tablero, &Serpiente);
-  drawTablero(Tablero, 50, 30, 69);
-	HAL_Delay(500);
+    
+		SnakePos(Tablero, &Serpiente);
+    drawTablero(Tablero, 50, 30, 69);
+	  HAL_Delay(500);
 	
  /*for(int i = 0; i < MAX_COLUMNA; i++){
 	 for(int j = 0; j < MAX_FILA; j++){
@@ -529,6 +529,26 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+void Dibujo(Game *estado){
+	switch (*estado) {
+		case menu: 
+			drawMenu();
+			
+			break;
+		case juego: break;
+		case pausa: break;
+		case muerto: break;
+		default: break;
+		
+	}
+	
+	
+	
+}
+
+void drawMenu(){
+
+}
 void drawFood(uint8_t pixelX, uint8_t pixelY){
 	uint8_t x1,x2,y1,y2;
 	x1 = pixelX - 1;
