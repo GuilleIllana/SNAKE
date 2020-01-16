@@ -78,7 +78,7 @@ I2S_HandleTypeDef hi2s3;
 SPI_HandleTypeDef hspi1;
 
 /* USER CODE BEGIN PV */
- bool ISR;
+ bool ISR = false;
 
 /* USER CODE END PV */
 
@@ -96,8 +96,9 @@ void MX_USB_HOST_Process(void);
 void drawFood(uint8_t pixelX, uint8_t pixelY);
 void drawTablero(uint8_t Tab[MAX_FILA][MAX_COLUMNA], uint8_t score);
 void SnakePos(uint8_t Tab[MAX_FILA][MAX_COLUMNA], Snake* snake, Game *estado);
-void Dibujo(Game *estado);
+void Dibujo(Game *estado, uint8_t Tab[MAX_FILA][MAX_COLUMNA], Snake* snake);
 void drawMenu();
+void JuegoInit(Snake *Serpiente, uint8_t Tab[MAX_FILA][MAX_COLUMNA]);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -126,7 +127,7 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
-   Game estado = menu;
+   Game estado = juego;
 
   /* USER CODE END Init */
 
@@ -161,12 +162,8 @@ int main(void)
 		 }
 	 }
 	 //inicialización del vector de posiciones
-	
-	 Serpiente.Pos[0].fila = 10;
-	 Serpiente.Pos[0].columna = 30;
-	 Serpiente.dir = 1;
-	 Serpiente.size = 1;
-	 Tablero[8][20] = 2;
+	 JuegoInit(&Serpiente, Tablero);
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -175,15 +172,26 @@ int main(void)
   {
 		//Pantalla 84*48 pixeles
 		//Cabeza 4 pixeles, cada fruta aumenta en dos el tamaño de la serpiente (4 pixeles +)
-	
-		SnakePos(Tablero, &Serpiente, &estado);
-    drawTablero(Tablero, Serpiente.size - 1);
-	  HAL_Delay(250);
+
+   if (estado == juego && ISR == true){
+		 estado = pausa;
+		 ISR = false;
+	 }	
+   else if (estado == pausa && ISR == true){
+		 estado = juego;
+		 ISR = false;
+	 }		 	 
+    else if (estado == muerto && ISR == true){
+		 JuegoInit(&Serpiente, Tablero);
+		 estado = juego;
+		 ISR = false;
+	 }	
 	if (1) {
 		 ADC_X = HAL_ADC_GetValue(&hadc1);
 	   ADC_Y = HAL_ADC_GetValue(&hadc2);
 	}
-		
+	 Dibujo(&estado,  Tablero, &Serpiente);
+	 HAL_Delay(100);
     /* USER CODE END WHILE */
     MX_USB_HOST_Process();
 
@@ -507,6 +515,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
+  /*Configure GPIO pin : PC5 */
+  GPIO_InitStruct.Pin = GPIO_PIN_5;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
   /*Configure GPIO pin : PB2 */
   GPIO_InitStruct.Pin = GPIO_PIN_2;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
@@ -542,17 +556,29 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
 
+  /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI0_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI0_IRQn);
+
 }
 
 /* USER CODE BEGIN 4 */
-void Dibujo(Game *estado){
+void Dibujo(Game *estado, uint8_t Tab[MAX_FILA][MAX_COLUMNA], Snake* snake){
 	switch (*estado) {
 		case menu: 
 			drawMenu();
 			break;
-		case juego: break;
+		case juego:
+		SnakePos(Tab, snake, estado);
+    drawTablero(Tab, snake->size - 1);
+	 		
+			break;
 		case pausa: break;
-		case muerto: break;
+		case muerto: 
+			  LCD_clrScr();
+				LCD_print("HAS MUERTO", 11,0);
+	      LCD_print("¿VOLVER A JUGAR?", 11,50);
+			break;
 		default: break;
 		
 	}
@@ -644,22 +670,22 @@ void SnakePos(uint8_t Tab[MAX_FILA][MAX_COLUMNA], Snake* snake, Game* estado) {
 	switch (snake->dir) {
 		case 0:
 			snake->Pos[0].fila = snake->Pos[0].fila + 1;
-			if (snake->Pos[0].fila == MAX_FILA) snake->Pos[0].fila = MAX_FILA - 1; 
+			if (snake->Pos[0].fila == MAX_FILA) *estado = muerto; 
 			break;
 		
 		case 1:
 			snake->Pos[0].columna = snake->Pos[0].columna + 1;
-			if (snake->Pos[0].columna == MAX_COLUMNA) snake->Pos[0].columna = MAX_COLUMNA - 1;			
+			if (snake->Pos[0].columna == MAX_COLUMNA) *estado = muerto;			
 			break;
 		
 		case 2: 
 			snake->Pos[0].fila = snake->Pos[0].fila - 1;
-			if (snake->Pos[0].fila == 255) snake->Pos[0].fila = 0;
+			if (snake->Pos[0].fila == 255) *estado = muerto;
 			break;
 		
 		case 3:
 			snake->Pos[0].columna = snake->Pos[0].columna - 1;
-			if (snake->Pos[0].columna == 255) snake->Pos[0].columna = 0; 
+			if (snake->Pos[0].columna == 255) *estado = muerto; 
 			break;
 		
 		default: 
@@ -688,11 +714,21 @@ void SnakePos(uint8_t Tab[MAX_FILA][MAX_COLUMNA], Snake* snake, Game* estado) {
  void HAL_ADC_ConvCpltCalBack(ADC_HandleTypeDef *hadc) {
 	
 	
-	 ISR = true;
+	 //ISR = true;
 
  }
  
-
+ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
+	 
+	 ISR = true;
+ }
+ void JuegoInit(Snake *Serpiente, uint8_t Tab[MAX_FILA][MAX_COLUMNA]){
+	 Serpiente->Pos[0].fila = 10;
+	 Serpiente->Pos[0].columna = 30;
+	 Serpiente->dir = 1;
+	 Serpiente->size = 1;
+	 Tab[8][20] = 2;
+ }
 /* USER CODE END 4 */
 
 /**
