@@ -41,7 +41,7 @@
 	 typedef struct {
 	  uint8_t size;
 	  uint8_t dir; //0 arriba, 1 derecha, 2 abajo, 3 izquierda
-	  Posicion* Pos;
+	  Posicion Pos[150];
 	 }Snake;
 	 
 	 typedef struct{
@@ -58,7 +58,7 @@
 #define MIN_X 2
 #define MIN_Y 10
 #define MAX_COLUMNA 40 
-#define MAX_FILA 19 
+#define MAX_FILA 18 
 #define MAX_SNAKE 760 //Longitud máxima de la serpiente (ocupando todo el tablero)
 /* USER CODE END PD */
 
@@ -78,7 +78,7 @@ I2S_HandleTypeDef hi2s3;
 SPI_HandleTypeDef hspi1;
 
 /* USER CODE BEGIN PV */
-
+ bool ISR;
 
 /* USER CODE END PV */
 
@@ -161,15 +161,11 @@ int main(void)
 		 }
 	 }
 	 //inicialización del vector de posiciones
-	Serpiente.Pos = malloc(MAX_SNAKE * sizeof(Posicion));
-	/* for (int i = 0; i < MAX_SNAKE; i++){
-		 Serpiente.Pos[i].fila = 0;
-		 Serpiente.Pos[i].columna = 0;
-	 }*/
-	 Serpiente.Pos[0].fila = 50;
-	 (Serpiente.Pos[0].columna) = 50;
+	
+	 Serpiente.Pos[0].fila = 10;
+	 Serpiente.Pos[0].columna = 30;
 	 Serpiente.dir = 1;
-	 Serpiente.size = 1;
+	 Serpiente.size = 20;
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -178,29 +174,20 @@ int main(void)
   {
 		//Pantalla 84*48 pixeles
 		//Cabeza 4 pixeles, cada fruta aumenta en dos el tamaño de la serpiente (4 pixeles +)
-    
-		/*SnakePos(Tablero, &Serpiente);
-    drawTablero(Tablero, 50, 30, 69);
-	  HAL_Delay(500);*/
 	
- /*for(int i = 0; i < MAX_COLUMNA; i++){
-	 for(int j = 0; j < MAX_FILA; j++){
-		 Tablero[j][i] = 1;
-		 drawTablero(Tablero, 50, 30, 69);
- 	   HAL_Delay(100);
-		  Tablero[j][i] = 0;
-	 } 
- }*/
-
- 
-//		X = buf[0];
-//		Y = buf[1];
+		SnakePos(Tablero, &Serpiente);
+    drawTablero(Tablero, 50, 30,  ADC_X);
+	  HAL_Delay(250);
+	if (1) {
+		 ADC_X = HAL_ADC_GetValue(&hadc1);
+	   ADC_Y = HAL_ADC_GetValue(&hadc2);
+	}
 		
     /* USER CODE END WHILE */
     MX_USB_HOST_Process();
 
     /* USER CODE BEGIN 3 */
-				
+
   }
   /* USER CODE END 3 */
 }
@@ -635,43 +622,38 @@ void drawTablero(uint8_t Tab[MAX_FILA][MAX_COLUMNA], uint8_t foodX, uint8_t food
 
 void SnakePos(uint8_t Tab[MAX_FILA][MAX_COLUMNA], Snake* snake) {
 	int aux_fila[snake->size], aux_columna[snake->size]; 
+	
 	for (int i = 0; i < snake->size; i++){
 		aux_fila[i] = snake->Pos[i].fila;
 		aux_columna[i] = snake->Pos[i].columna;
 	}
-	for (int i = 0; i < snake->size; i++){
-		snake->Pos[i + 1].fila = aux_fila[i];
-		snake->Pos[i + 1].columna = aux_columna[i];
-	}
-	volatile int comp = snake->Pos[0].fila;
- volatile int comp2 = snake->Pos[0].columna;
+
 	switch (snake->dir) {
 		case 0:
-			snake->Pos[0].columna = snake->Pos[0].columna + 1;
-			
-		
-			break;
-		case 1:
 			snake->Pos[0].fila = snake->Pos[0].fila + 1;
-			
+			if (snake->Pos[0].fila == MAX_FILA) snake->Pos[0].fila = MAX_FILA - 1; 
 			break;
+		
+		case 1:
+			snake->Pos[0].columna = snake->Pos[0].columna + 1;
+			if (snake->Pos[0].columna == MAX_COLUMNA) snake->Pos[0].columna = MAX_COLUMNA - 1;			
+			break;
+		
 		case 2: 
-			snake->Pos[0].columna = snake->Pos[0].columna - 1;
+			snake->Pos[0].fila = snake->Pos[0].fila - 1;
+			if (snake->Pos[0].fila == 255) snake->Pos[0].fila = 0;
 			break;
 		
 		case 3:
-			snake->Pos[0].fila = snake->Pos[0].fila - 1;
-			
+			snake->Pos[0].columna = snake->Pos[0].columna - 1;
+			if (snake->Pos[0].columna == 255) snake->Pos[0].columna = 0; 
 			break;
+		
 		default: 
-			
 			break;
 	}
-
-	if (snake->Pos[0].fila == MAX_FILA) snake->Pos[0].fila = MAX_FILA - 1; 
-	if (snake->Pos[0].columna == MAX_COLUMNA) snake->Pos[0].columna = MAX_COLUMNA - 1; 
-		//No consigo encontrar el fallo aquí. Se queda atascado
-	
+	 
+		
 	for (int i = 0; i < snake->size; i++){
 		 Tab[snake->Pos[i].fila][snake->Pos[i].columna] = 1;
 	}
@@ -682,11 +664,11 @@ void SnakePos(uint8_t Tab[MAX_FILA][MAX_COLUMNA], Snake* snake) {
 	snake->Pos[snake->size].columna = 0;
 
 }
+
  void HAL_ADC_ConvCpltCalBack(ADC_HandleTypeDef *hadc) {
 	
-	 ADC_X = HAL_ADC_GetValue(&hadc1);
-	 ADC_Y= HAL_ADC_GetValue(&hadc2);
-	 
+	
+	 ISR = true;
 
  }
  
@@ -701,7 +683,7 @@ void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
   /* User can add his own implementation to report the HAL error return state */
-   HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_SET);
+  
   /* USER CODE END Error_Handler_Debug */
 }
 
