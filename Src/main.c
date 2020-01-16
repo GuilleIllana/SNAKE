@@ -94,8 +94,8 @@ void MX_USB_HOST_Process(void);
 
 /* USER CODE BEGIN PFP */
 void drawFood(uint8_t pixelX, uint8_t pixelY);
-void drawTablero(uint8_t Tab[MAX_FILA][MAX_COLUMNA], uint8_t foodX, uint8_t foodY, uint8_t score);
-void SnakePos(uint8_t Tab[MAX_FILA][MAX_COLUMNA], Snake* snake);
+void drawTablero(uint8_t Tab[MAX_FILA][MAX_COLUMNA], uint8_t score);
+void SnakePos(uint8_t Tab[MAX_FILA][MAX_COLUMNA], Snake* snake, Game *estado);
 void Dibujo(Game *estado);
 void drawMenu();
 /* USER CODE END PFP */
@@ -165,7 +165,8 @@ int main(void)
 	 Serpiente.Pos[0].fila = 10;
 	 Serpiente.Pos[0].columna = 30;
 	 Serpiente.dir = 1;
-	 Serpiente.size = 20;
+	 Serpiente.size = 1;
+	 Tablero[8][20] = 2;
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -175,8 +176,8 @@ int main(void)
 		//Pantalla 84*48 pixeles
 		//Cabeza 4 pixeles, cada fruta aumenta en dos el tamaño de la serpiente (4 pixeles +)
 	
-		SnakePos(Tablero, &Serpiente);
-    drawTablero(Tablero, 50, 30,  ADC_X);
+		SnakePos(Tablero, &Serpiente, &estado);
+    drawTablero(Tablero, Serpiente.size - 1);
 	  HAL_Delay(250);
 	if (1) {
 		 ADC_X = HAL_ADC_GetValue(&hadc1);
@@ -331,7 +332,7 @@ static void MX_ADC2_Init(void)
   */
   sConfig.Channel = ADC_CHANNEL_2;
   sConfig.Rank = 1;
-  sConfig.SamplingTime = ADC_SAMPLETIME_3CYCLES;
+  sConfig.SamplingTime = ADC_SAMPLETIME_480CYCLES;
   if (HAL_ADC_ConfigChannel(&hadc2, &sConfig) != HAL_OK)
   {
     Error_Handler();
@@ -548,7 +549,6 @@ void Dibujo(Game *estado){
 	switch (*estado) {
 		case menu: 
 			drawMenu();
-			
 			break;
 		case juego: break;
 		case pausa: break;
@@ -565,23 +565,25 @@ void drawMenu(){
 
 }
 void drawFood(uint8_t pixelX, uint8_t pixelY){
-	uint8_t x1,x2,y1,y2;
-	x1 = pixelX - 1;
-	x2 = pixelX + 1;
-	y1 = pixelY - 1;
-	y2 = pixelY + 1;
-	if (x1 < MAX_X - 1)
-		LCD_setPixel(x1, pixelY, true);
-	if (x2 < MAX_X - 1)
-		LCD_setPixel(x2, pixelY, true);
-	if (y1 < MAX_Y - 1)
-		LCD_setPixel(pixelX, y1, true);
-	if (y2 < MAX_Y - 1)
-		LCD_setPixel(pixelX, y2, true);
+	uint8_t x1,x2,y1,y2, x, y;
+	x = 2*pixelY + 2;
+	y = 2*pixelX + 10;
+	x1 = x - 1;
+	x2 = x + 1;
+	y1 = y - 1;
+	y2 = y + 1;
+	if (x1 <= MAX_X)
+		LCD_setPixel(x1, y, true);
+	if (x2 <= MAX_X)
+		LCD_setPixel(x2, y, true);
+	if (y1 <= MAX_Y)
+		LCD_setPixel(x, y1, true);
+	if (y2 <= MAX_Y)
+		LCD_setPixel(x, y2, true);
 	LCD_refreshArea(x1, y1, x2, y2);
 }
 
-void drawTablero(uint8_t Tab[MAX_FILA][MAX_COLUMNA], uint8_t foodX, uint8_t foodY, uint8_t score){
+void drawTablero(uint8_t Tab[MAX_FILA][MAX_COLUMNA], uint8_t score){
   char  num[3];
 	
 	//Paso de int a char* (impresión de la puntuación)
@@ -609,7 +611,7 @@ void drawTablero(uint8_t Tab[MAX_FILA][MAX_COLUMNA], uint8_t foodX, uint8_t food
 				LCD_drawHLine(2*i + 2, 2*j + 11, 2);
 			}
 			if (Tab[j][i] == 2){
-				drawFood(foodX, foodY);
+				drawFood(j, i);
 			}
 		}
 	}
@@ -620,14 +622,25 @@ void drawTablero(uint8_t Tab[MAX_FILA][MAX_COLUMNA], uint8_t foodX, uint8_t food
 	LCD_print(num, 70,0 );
 }
 
-void SnakePos(uint8_t Tab[MAX_FILA][MAX_COLUMNA], Snake* snake) {
+void SnakePos(uint8_t Tab[MAX_FILA][MAX_COLUMNA], Snake* snake, Game* estado) {
 	int aux_fila[snake->size], aux_columna[snake->size]; 
+	
+	if (ADC_X > 200 && snake->dir != 3) snake->dir = 1;
+	else if (ADC_X < 50 && snake->dir != 1) snake->dir = 3;
+	else if (ADC_Y > 200 && snake->dir != 2) snake->dir = 0;
+	else if (ADC_Y < 50 && snake->dir != 0) snake->dir = 2;
+	else snake->dir = snake->dir;
 	
 	for (int i = 0; i < snake->size; i++){
 		aux_fila[i] = snake->Pos[i].fila;
 		aux_columna[i] = snake->Pos[i].columna;
 	}
-
+   
+	 for (int i = 0; i < snake->size; i++){
+		snake->Pos[i+1].fila = aux_fila[i];
+		snake->Pos[i+1].columna = aux_columna[i];
+	}
+	 
 	switch (snake->dir) {
 		case 0:
 			snake->Pos[0].fila = snake->Pos[0].fila + 1;
@@ -653,11 +666,18 @@ void SnakePos(uint8_t Tab[MAX_FILA][MAX_COLUMNA], Snake* snake) {
 			break;
 	}
 	 
-		
+	if(Tab[snake->Pos[0].fila][snake->Pos[0].columna] == 2) {
+		uint8_t fila, columna;
+		snake->size = snake->size++; 
+	  fila = rand() % MAX_FILA;
+		columna = rand() % MAX_COLUMNA;
+		Tab[fila][columna] = 2;
+	}
 	for (int i = 0; i < snake->size; i++){
 		 Tab[snake->Pos[i].fila][snake->Pos[i].columna] = 1;
 	}
-
+   
+	
 	Tab[snake->Pos[snake->size].fila][snake->Pos[snake->size].columna] = 0;
 	
 	snake->Pos[snake->size].fila = 0;
