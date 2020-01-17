@@ -31,7 +31,7 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-	 typedef enum{menu, pausa, juego, muerto} Game;
+	 typedef enum{pausa, juego, muerto} Game;
 	 typedef enum{inicio, como}Estado_menu;
 	 
 	 typedef struct{
@@ -73,6 +73,8 @@ I2S_HandleTypeDef hi2s3;
 
 SPI_HandleTypeDef hspi1;
 
+TIM_HandleTypeDef htim3;
+
 /* USER CODE BEGIN PV */
 	bool ISR = false;
   bool ISADC = false;
@@ -88,6 +90,7 @@ static void MX_I2S3_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_ADC1_Init(void);
 static void MX_ADC2_Init(void);
+static void MX_TIM3_Init(void);
 void MX_USB_HOST_Process(void);
 
 /* USER CODE BEGIN PFP */
@@ -95,8 +98,8 @@ void drawFood(uint8_t pixelX, uint8_t pixelY); //Dibujo de la comida
 void drawTablero(uint8_t Tab[MAX_FILA][MAX_COLUMNA], uint8_t score);
 void SnakePos(uint8_t Tab[MAX_FILA][MAX_COLUMNA], Snake* snake, Game *estado);
 void Dibujo(Game *estado, uint8_t Tab[MAX_FILA][MAX_COLUMNA], Snake* snake);
-void drawMenu();
 void JuegoInit(Snake *Serpiente, uint8_t Tab[MAX_FILA][MAX_COLUMNA]);
+void Estado(Game *estado, Snake *Serpiente, uint8_t Tab[MAX_FILA][MAX_COLUMNA]);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -148,16 +151,17 @@ int main(void)
   MX_USB_HOST_Init();
   MX_ADC1_Init();
   MX_ADC2_Init();
+  MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
   LCD_init();
 	HAL_ADC_Start_IT(&hadc1);
 	HAL_ADC_Start_IT(&hadc2);
-
+  //HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
 	
 
 	 //inicialización del vector de posiciones
 	 JuegoInit(&Serpiente, Tablero);
-
+   
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -174,21 +178,8 @@ int main(void)
     MX_USB_HOST_Process();
 
     /* USER CODE BEGIN 3 */
-   if (estado == juego && ISR == true){
-		 estado = pausa;
-		 ISR = false;
-	 }	
-   else if (estado == pausa && ISR == true){
-		 estado = juego;
-		 ISR = false;
-	 }		 	 
-    else if (estado == muerto && ISR == true){
-		 JuegoInit(&Serpiente, Tablero);
-		 estado = juego;
-		 ISR = false;
-	 }	
-
-	
+		//LLamada a funciones Estado (para gestión del estado) y Dibujo(Para enviar a la pantalla los datos )
+  Estado(&estado, &Serpiente, Tablero);
 	Dibujo(&estado, Tablero, &Serpiente);	 Dibujo(&estado, Tablero, &Serpiente);	
        
   }
@@ -452,6 +443,55 @@ static void MX_SPI1_Init(void)
 }
 
 /**
+  * @brief TIM3 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM3_Init(void)
+{
+
+  /* USER CODE BEGIN TIM3_Init 0 */
+
+  /* USER CODE END TIM3_Init 0 */
+
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+  TIM_OC_InitTypeDef sConfigOC = {0};
+
+  /* USER CODE BEGIN TIM3_Init 1 */
+
+  /* USER CODE END TIM3_Init 1 */
+  htim3.Instance = TIM3;
+  htim3.Init.Prescaler = 16;
+  htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim3.Init.Period = 100;
+  htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_PWM_Init(&htim3) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim3, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sConfigOC.OCMode = TIM_OCMODE_PWM1;
+  sConfigOC.Pulse = 50;
+  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
+  sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
+  if (HAL_TIM_PWM_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM3_Init 2 */
+
+  /* USER CODE END TIM3_Init 2 */
+  HAL_TIM_MspPostInit(&htim3);
+
+}
+
+/**
   * @brief GPIO Initialization Function
   * @param None
   * @retval None
@@ -560,13 +600,9 @@ static void MX_GPIO_Init(void)
 void Dibujo(Game *estado, uint8_t Tab[MAX_FILA][MAX_COLUMNA], Snake* snake){
 	
 	  char  num[3];
-	
-	//Paso de int a char* (impresión de la puntuación)
-	
+	//Elección de lo que hay que dibujar según el estado en el que nos encontramos
 	switch (*estado) {
-		case menu: 
-			drawMenu();
-			break;
+		
 		case juego:
 		SnakePos(Tab, snake, estado);
     drawTablero(Tab, snake->size - 1);
@@ -579,17 +615,18 @@ void Dibujo(Game *estado, uint8_t Tab[MAX_FILA][MAX_COLUMNA], Snake* snake){
 		case muerto: 
 			sprintf(num, "%d" ,snake->size - 1);
 			LCD_clrScr();
+		  LCD_invert(true);
 	    LCD_print("GAME", 30, 2);
 	    LCD_print("OVER", 30, 3);
 			LCD_print("SCORE:", 20, 5);
 	    LCD_print(num, 55, 5);
-      HAL_Delay(1000);
+      HAL_Delay(750);
 		  LCD_clrScr();
 		  LCD_print("JUEGAS", 25, 2);
 	    LCD_print("OTRA?", 28, 3);
 			LCD_print("SCORE:", 20, 5);
 	    LCD_print(num, 55, 5);
-	    HAL_Delay(1000);
+	    HAL_Delay(750);
 
 			break;
 		default: break;
@@ -598,9 +635,6 @@ void Dibujo(Game *estado, uint8_t Tab[MAX_FILA][MAX_COLUMNA], Snake* snake){
 
 }
 
-void drawMenu(){
-
-}
 void drawFood(uint8_t pixelX, uint8_t pixelY){
 	uint8_t x1,x2,y1,y2, x, y;
 	x = 2*pixelY + 2;
@@ -661,23 +695,25 @@ void drawTablero(uint8_t Tab[MAX_FILA][MAX_COLUMNA], uint8_t score){
 
 void SnakePos(uint8_t Tab[MAX_FILA][MAX_COLUMNA], Snake* snake, Game* estado) {
 	int aux_fila[snake->size], aux_columna[snake->size]; 
-	
+	//Cambio de dirección de la serpiente según los valores del ADC
 	if (ADC_X > 200 && snake->dir != 3) snake->dir = 1;
 	else if (ADC_X < 50 && snake->dir != 1) snake->dir = 3;
 	else if (ADC_Y > 200 && snake->dir != 2) snake->dir = 0;
 	else if (ADC_Y < 50 && snake->dir != 0) snake->dir = 2;
 	else snake->dir = snake->dir;
 	
+	//Asignación de valores al vector auxiliar
 	for (int i = 0; i < snake->size; i++){
 		aux_fila[i] = snake->Pos[i].fila;
 		aux_columna[i] = snake->Pos[i].columna;
 	}
    
+	//Desplazamiento del vector de posiciones 
 	 for (int i = 0; i < snake->size; i++){
 		snake->Pos[i+1].fila = aux_fila[i];
 		snake->Pos[i+1].columna = aux_columna[i];
 	}
-	 
+	 //Comprobación de limites y movimiento de la serpiente
 	switch (snake->dir) {
 		case 0:
 			snake->Pos[0].fila = snake->Pos[0].fila + 1;
@@ -702,45 +738,56 @@ void SnakePos(uint8_t Tab[MAX_FILA][MAX_COLUMNA], Snake* snake, Game* estado) {
 		default: 
 			break;
 	}
-	 
+	 //Comprobación de comida
 	if(Tab[snake->Pos[0].fila][snake->Pos[0].columna] == 2) {
 		uint8_t fila, columna;
 		snake->size = snake->size++; 
-	  fila = rand() % MAX_FILA;
+	  do {
+		fila = rand() % MAX_FILA;
 		columna = rand() % MAX_COLUMNA;
+		}while(Tab[fila][columna] == 1);
+		
 		Tab[fila][columna] = 2;
 	}
-	
+	else if(Tab[snake->Pos[0].fila][snake->Pos[0].columna] == 3) {
+		snake->size = snake->size + 2;
+		
+	}
+	//Comprobación si se come a si misma
 	for(int i = 1; i < snake->size; i++)
 		if(snake->Pos[0].fila == snake->Pos[i].fila && snake->Pos[0].columna == snake->Pos[i].columna)
 			*estado = muerto;
 			
 	
-	
+	//Las posiciones que ocupan la serpiente se ponen a 1
 	for (int i = 0; i < snake->size; i++){
 		 Tab[snake->Pos[i].fila][snake->Pos[i].columna] = 1;
 	}
    
-	
+	//La antigua posición de la cola se pone a 0 (la serpiente se ha movido)
 	Tab[snake->Pos[snake->size].fila][snake->Pos[snake->size].columna] = 0;
 	
 	snake->Pos[snake->size].fila = 0;
 	snake->Pos[snake->size].columna = 0;
 
 }
-
+//Interrupciones del ADC
  void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc) {
 
      ADC_X = HAL_ADC_GetValue(&hadc1);
 	   ADC_Y = HAL_ADC_GetValue(&hadc2);
  }
- 
+ //Interrupción del botón
  void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 	 
 	 ISR = true;
  }
+ 
+ //Inicio del juego
  void JuegoInit(Snake *Serpiente, uint8_t Tab[MAX_FILA][MAX_COLUMNA]){
 	   LCD_clrScr();
+	   LCD_invert(false);
+	   LCD_print("CARGANDO...", 10, 2);
 	 	 for (int i = 0; i < MAX_COLUMNA; i++){
 		 for (int j = 0; j < MAX_FILA; j++){
 			 Tab[j][i] = 0;
@@ -751,8 +798,25 @@ void SnakePos(uint8_t Tab[MAX_FILA][MAX_COLUMNA], Snake* snake, Game* estado) {
 	 Serpiente->dir = 3;
 	 Serpiente->size = 1;
 	 Tab[8][20] = 2;
+	 HAL_Delay(100);
  }
  
+ //Cambio de estado con ISR
+ void Estado(Game *estado, Snake *Serpiente, uint8_t Tab[MAX_FILA][MAX_COLUMNA]){
+	   if (*estado == juego && ISR == true){
+		 *estado = pausa;
+		 ISR = false;
+	 }	
+   else if (*estado == pausa && ISR == true){
+		 *estado = juego;
+		 ISR = false;
+	 }		 	 
+    else if (*estado == muerto && ISR == true){
+		 JuegoInit(Serpiente, Tab);
+		 *estado = juego;
+		 ISR = false;
+	 }	
+ }
  
 /* USER CODE END 4 */
 

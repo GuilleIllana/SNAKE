@@ -34,5 +34,7 @@ trabajo_sed\stm32f4xx_hal_i2s.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_h
 trabajo_sed\stm32f4xx_hal_i2s.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pwr.h
 trabajo_sed\stm32f4xx_hal_i2s.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pwr_ex.h
 trabajo_sed\stm32f4xx_hal_i2s.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_spi.h
+trabajo_sed\stm32f4xx_hal_i2s.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h
+trabajo_sed\stm32f4xx_hal_i2s.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h
 trabajo_sed\stm32f4xx_hal_i2s.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_hcd.h
 trabajo_sed\stm32f4xx_hal_i2s.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_ll_usb.h
