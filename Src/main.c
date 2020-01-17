@@ -31,9 +31,8 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-	 typedef enum{pausa, juego, muerto} Game;
-	 typedef enum{inicio, como}Estado_menu;
-	 
+	 typedef enum{inicio, pausa, juego, muerto} Game;
+	 	 
 	 typedef struct{
 	   uint8_t fila;
 		 uint8_t columna;
@@ -128,7 +127,7 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
-   Game estado = juego;
+   Game estado = inicio;
 
   /* USER CODE END Init */
 
@@ -629,6 +628,13 @@ void Dibujo(Game *estado, uint8_t Tab[MAX_FILA][MAX_COLUMNA], Snake* snake){
 	    HAL_Delay(750);
 
 			break;
+		case inicio: 
+			LCD_clrScr();
+		  LCD_invert(true);
+	    LCD_print("PULSA", 28, 2);
+	    LCD_print("PARA", 30, 3);
+		  LCD_print("INICIAR", 20, 4);
+		  break;
 		default: break;
 		
 	}
@@ -811,11 +817,12 @@ void SnakePos(uint8_t Tab[MAX_FILA][MAX_COLUMNA], Snake* snake, Game* estado) {
 		 *estado = juego;
 		 ISR = false;
 	 }		 	 
-    else if (*estado == muerto && ISR == true){
+    else if ((*estado == muerto || *estado == inicio) && ISR == true){
 		 JuegoInit(Serpiente, Tab);
 		 *estado = juego;
 		 ISR = false;
 	 }	
+		
  }
  
 /* USER CODE END 4 */
