@@ -33,6 +33,7 @@
 /* USER CODE BEGIN PTD */
 	 typedef enum{menu, pausa, juego, muerto} Game;
 	 typedef enum{inicio, como}Estado_menu;
+	 
 	 typedef struct{
 	   uint8_t fila;
 		 uint8_t columna;
@@ -41,14 +42,9 @@
 	 typedef struct {
 	  uint8_t size;
 	  uint8_t dir; //0 arriba, 1 derecha, 2 abajo, 3 izquierda
-	  Posicion Pos[150];
+	  Posicion Pos[150]; //No se puede poner más
 	 }Snake;
 	 
-	 typedef struct{
-	  uint8_t x;
-	  uint8_t y;
-	  Posicion pos;
-	 }Food;
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -79,6 +75,9 @@ SPI_HandleTypeDef hspi1;
 
 /* USER CODE BEGIN PV */
  bool ISR = false;
+ uint8_t ADC_X = 0;
+ uint8_t ADC_Y = 0;
+ uint32_t Dificultad = 175;
 
 /* USER CODE END PV */
 
@@ -93,7 +92,7 @@ static void MX_ADC2_Init(void);
 void MX_USB_HOST_Process(void);
 
 /* USER CODE BEGIN PFP */
-void drawFood(uint8_t pixelX, uint8_t pixelY);
+void drawFood(uint8_t pixelX, uint8_t pixelY); //Dibujo de la comida
 void drawTablero(uint8_t Tab[MAX_FILA][MAX_COLUMNA], uint8_t score);
 void SnakePos(uint8_t Tab[MAX_FILA][MAX_COLUMNA], Snake* snake, Game *estado);
 void Dibujo(Game *estado, uint8_t Tab[MAX_FILA][MAX_COLUMNA], Snake* snake);
@@ -103,9 +102,6 @@ void JuegoInit(Snake *Serpiente, uint8_t Tab[MAX_FILA][MAX_COLUMNA]);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-   uint8_t buf[2];
-   uint8_t ADC_X = 0;
-   uint8_t ADC_Y = 0;
 /* USER CODE END 0 */
 
 /**
@@ -116,7 +112,6 @@ int main(void)
 {
   /* USER CODE BEGIN 1 */
   Snake Serpiente;
-	Food Comida;
 	uint8_t Tablero[MAX_FILA][MAX_COLUMNA]; //0 si vacio, 1 si serpiente, 2 si comida
   /* USER CODE END 1 */
   
@@ -156,11 +151,7 @@ int main(void)
 	HAL_ADC_Start_IT(&hadc2);
 
 	
-	 for (int i = 0; i < MAX_COLUMNA; i++){
-		 for (int j = 0; j < MAX_FILA; j++){
-			 Tablero[j][i] = 0;
-		 }
-	 }
+
 	 //inicialización del vector de posiciones
 	 JuegoInit(&Serpiente, Tablero);
 
@@ -186,12 +177,10 @@ int main(void)
 		 estado = juego;
 		 ISR = false;
 	 }	
-	if (1) {
-		 ADC_X = HAL_ADC_GetValue(&hadc1);
-	   ADC_Y = HAL_ADC_GetValue(&hadc2);
-	}
-	 Dibujo(&estado,  Tablero, &Serpiente);
-	 HAL_Delay(100);
+	Dibujo(&estado, Tablero, &Serpiente);	 Dibujo(&estado, Tablero, &Serpiente);	
+       HAL_Delay(125);
+
+
     /* USER CODE END WHILE */
     MX_USB_HOST_Process();
 
@@ -564,6 +553,11 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 void Dibujo(Game *estado, uint8_t Tab[MAX_FILA][MAX_COLUMNA], Snake* snake){
+	
+	  char  num[3];
+	
+	//Paso de int a char* (impresión de la puntuación)
+	
 	switch (*estado) {
 		case menu: 
 			drawMenu();
@@ -573,18 +567,30 @@ void Dibujo(Game *estado, uint8_t Tab[MAX_FILA][MAX_COLUMNA], Snake* snake){
     drawTablero(Tab, snake->size - 1);
 	 		
 			break;
-		case pausa: break;
+		case pausa: 
+			 LCD_print("PAUSA", 28, 3);
+		
+		   break;
 		case muerto: 
-			  LCD_clrScr();
-				LCD_print("HAS MUERTO", 11,0);
-	      LCD_print("¿VOLVER A JUGAR?", 11,50);
+			sprintf(num, "%d" ,snake->size - 1);
+			LCD_clrScr();
+	    LCD_print("GAME", 30, 2);
+	    LCD_print("OVER", 30, 3);
+			LCD_print("SCORE:", 20, 5);
+	    LCD_print(num, 55, 5);
+      HAL_Delay(1000);
+		  LCD_clrScr();
+		  LCD_print("JUEGAS", 25, 2);
+	    LCD_print("OTRA?", 28, 3);
+			LCD_print("SCORE:", 20, 5);
+	    LCD_print(num, 55, 5);
+	    HAL_Delay(1000);
+
 			break;
 		default: break;
 		
 	}
-	
-	
-	
+
 }
 
 void drawMenu(){
@@ -699,6 +705,13 @@ void SnakePos(uint8_t Tab[MAX_FILA][MAX_COLUMNA], Snake* snake, Game* estado) {
 		columna = rand() % MAX_COLUMNA;
 		Tab[fila][columna] = 2;
 	}
+	for(int i = 1; i < snake->size; i++)
+		if(snake->Pos[0].fila == snake->Pos[i].fila && snake->Pos[0].columna == snake->Pos[i].columna)
+			*estado = muerto;
+			
+		
+	
+	
 	for (int i = 0; i < snake->size; i++){
 		 Tab[snake->Pos[i].fila][snake->Pos[i].columna] = 1;
 	}
@@ -711,11 +724,10 @@ void SnakePos(uint8_t Tab[MAX_FILA][MAX_COLUMNA], Snake* snake, Game* estado) {
 
 }
 
- void HAL_ADC_ConvCpltCalBack(ADC_HandleTypeDef *hadc) {
-	
-	
-	 //ISR = true;
+ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc) {
 
+	   ADC_X = HAL_ADC_GetValue(&hadc1);
+	   ADC_Y = HAL_ADC_GetValue(&hadc2); 
  }
  
  void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
@@ -723,12 +735,20 @@ void SnakePos(uint8_t Tab[MAX_FILA][MAX_COLUMNA], Snake* snake, Game* estado) {
 	 ISR = true;
  }
  void JuegoInit(Snake *Serpiente, uint8_t Tab[MAX_FILA][MAX_COLUMNA]){
+	   LCD_clrScr();
+	 	 for (int i = 0; i < MAX_COLUMNA; i++){
+		 for (int j = 0; j < MAX_FILA; j++){
+			 Tab[j][i] = 0;
+		 }
+	 }
 	 Serpiente->Pos[0].fila = 10;
 	 Serpiente->Pos[0].columna = 30;
-	 Serpiente->dir = 1;
+	 Serpiente->dir = 3;
 	 Serpiente->size = 1;
 	 Tab[8][20] = 2;
  }
+ 
+ 
 /* USER CODE END 4 */
 
 /**
