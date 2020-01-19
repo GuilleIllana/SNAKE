@@ -100,6 +100,8 @@ void SnakePos(uint8_t Tab[MAX_FILA][MAX_COLUMNA], Snake* snake, Game *estado);
 void Dibujo(Game *estado, uint8_t Tab[MAX_FILA][MAX_COLUMNA], Snake* snake);
 void JuegoInit(Snake *Serpiente, uint8_t Tab[MAX_FILA][MAX_COLUMNA]);
 void Estado(Game *estado, Snake *Serpiente, uint8_t Tab[MAX_FILA][MAX_COLUMNA]);
+uint8_t cambioDir(uint8_t direccion);
+void ajustePos(uint8_t Tab[MAX_FILA][MAX_COLUMNA], Snake* snake, Game *estado);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -598,6 +600,7 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+//Dibuja en la pantalla según el estado del snake
 void Dibujo(Game *estado, uint8_t Tab[MAX_FILA][MAX_COLUMNA], Snake* snake){
 	
 	  char  num[3];
@@ -615,20 +618,23 @@ void Dibujo(Game *estado, uint8_t Tab[MAX_FILA][MAX_COLUMNA], Snake* snake){
 		   break;
 		case muerto: 
 			sprintf(num, "%d" ,snake->size - 1);
-			LCD_clrScr();
+		if (!ISR){
+   		LCD_clrScr();
 		  LCD_invert(true);
 	    LCD_print("GAME", 30, 2);
 	    LCD_print("OVER", 30, 3);
 			LCD_print("SCORE:", 20, 5);
 	    LCD_print(num, 55, 5);
       HAL_Delay(750);
+		}
+		 if (!ISR){ 
 		  LCD_clrScr();
 		  LCD_print("JUEGAS", 25, 2);
 	    LCD_print("OTRA?", 28, 3);
 			LCD_print("SCORE:", 20, 5);
 	    LCD_print(num, 55, 5);
 	    HAL_Delay(750);
-
+		 }
 			break;
 		case inicio: 
 			LCD_clrScr();
@@ -642,7 +648,7 @@ void Dibujo(Game *estado, uint8_t Tab[MAX_FILA][MAX_COLUMNA], Snake* snake){
 	}
 
 }
-
+//Dibujo de la comida
 void drawFood(uint8_t pixelX, uint8_t pixelY){
 	uint8_t x1,x2,y1,y2, x, y;
 	x = 2*pixelY + 2;
@@ -661,7 +667,7 @@ void drawFood(uint8_t pixelX, uint8_t pixelY){
 		LCD_setPixel(x, y2, true);
 	LCD_refreshArea(x1, y1, x2, y2);
 }
-
+//Dibujo del tablero
 void drawTablero(uint8_t Tab[MAX_FILA][MAX_COLUMNA], uint8_t score){
   char  num[3];
 	
@@ -700,16 +706,11 @@ void drawTablero(uint8_t Tab[MAX_FILA][MAX_COLUMNA], uint8_t score){
 	LCD_print(puntos, 35,0);
 	LCD_print(num, 70,0 );
 }
-
+//Movimiento de la serpiente, incluyendo comida y declaración de estado "muerto"
 void SnakePos(uint8_t Tab[MAX_FILA][MAX_COLUMNA], Snake* snake, Game* estado) {
 	int aux_fila[snake->size], aux_columna[snake->size]; 
-	//Cambio de dirección de la serpiente según los valores del ADC
-	if (ADC_X > 200 && snake->dir != 3) snake->dir = 1;
-	else if (ADC_X < 50 && snake->dir != 1) snake->dir = 3;
-	else if (ADC_Y > 200 && snake->dir != 2) snake->dir = 0;
-	else if (ADC_Y < 50 && snake->dir != 0) snake->dir = 2;
-	else snake->dir = snake->dir;
-	
+
+	snake->dir = cambioDir(snake->dir);
 	//Asignación de valores al vector auxiliar
 	for (int i = 0; i < snake->size; i++){
 		aux_fila[i] = snake->Pos[i].fila;
@@ -721,7 +722,76 @@ void SnakePos(uint8_t Tab[MAX_FILA][MAX_COLUMNA], Snake* snake, Game* estado) {
 		snake->Pos[i+1].fila = aux_fila[i];
 		snake->Pos[i+1].columna = aux_columna[i];
 	}
-	 //Comprobación de limites y movimiento de la serpiente
+ ajustePos(Tab, snake, estado);
+	//Comprobación si se come a si misma
+	for(int i = 1; i < snake->size; i++)
+		if(snake->Pos[0].fila == snake->Pos[i].fila && snake->Pos[0].columna == snake->Pos[i].columna)
+			*estado = muerto;
+			
+	
+	//Las posiciones que ocupan la serpiente se ponen a 1
+	for (int i = 0; i < snake->size; i++){
+		 Tab[snake->Pos[i].fila][snake->Pos[i].columna] = 1;
+	}
+   
+	//La antigua posición de la cola se pone a 0 (la serpiente se ha movido)
+	Tab[snake->Pos[snake->size].fila][snake->Pos[snake->size].columna] = 0;
+	
+	snake->Pos[snake->size].fila = 0;
+	snake->Pos[snake->size].columna = 0;
+
+}
+ 
+ //Inicio del juego
+ void JuegoInit(Snake *Serpiente, uint8_t Tab[MAX_FILA][MAX_COLUMNA]){
+	   LCD_clrScr();
+	   LCD_invert(false);
+	   LCD_print("CARGANDO...", 10, 2);
+	 	 for (int i = 0; i < MAX_COLUMNA; i++){
+		 for (int j = 0; j < MAX_FILA; j++){
+			 Tab[j][i] = 0;
+		 }
+	 }
+	 Serpiente->Pos[0].fila = 10;
+	 Serpiente->Pos[0].columna = 30;
+	 Serpiente->dir = 3;
+	 Serpiente->size = 1;
+	 Tab[8][20] = 2;
+	 HAL_Delay(100);
+ }
+ 
+ //Cambio de estado con ISR
+ void Estado(Game *estado, Snake *Serpiente, uint8_t Tab[MAX_FILA][MAX_COLUMNA]){
+	   if (*estado == juego && ISR == true){
+		 *estado = pausa;
+		 ISR = false;
+	 }	
+   else if (*estado == pausa && ISR == true){
+		 *estado = juego;
+		 ISR = false;
+	 }		 	 
+    else if ((*estado == muerto || *estado == inicio) && ISR == true){
+		 JuegoInit(Serpiente, Tab);
+		 *estado = juego;
+		 ISR = false;
+	 }	
+		
+ }
+ 
+ uint8_t cambioDir(uint8_t direccion){
+	 
+	 int dir;
+	 	//Cambio de dirección de la serpiente según los valores del ADC
+	if (ADC_X > 200 && direccion != 3) dir = 1;
+	else if (ADC_X < 50 && direccion != 1) dir = 3;
+	else if (ADC_Y > 200 && direccion != 2) dir = 0;
+	else if (ADC_Y < 50 && direccion != 0) dir = 2;
+	else dir = direccion;
+	return dir;
+	 
+ }
+ void ajustePos(uint8_t Tab[MAX_FILA][MAX_COLUMNA], Snake* snake, Game *estado){
+	 	 //Comprobación de limites y movimiento de la serpiente
 	switch (snake->dir) {
 		case 0:
 			snake->Pos[0].fila = snake->Pos[0].fila + 1;
@@ -771,72 +841,8 @@ void SnakePos(uint8_t Tab[MAX_FILA][MAX_COLUMNA], Snake* snake, Game* estado) {
 		
 		 Tab[fila][columna] = 2;
 	}
-	//Comprobación si se come a si misma
-	for(int i = 1; i < snake->size; i++)
-		if(snake->Pos[0].fila == snake->Pos[i].fila && snake->Pos[0].columna == snake->Pos[i].columna)
-			*estado = muerto;
-			
-	
-	//Las posiciones que ocupan la serpiente se ponen a 1
-	for (int i = 0; i < snake->size; i++){
-		 Tab[snake->Pos[i].fila][snake->Pos[i].columna] = 1;
-	}
-   
-	//La antigua posición de la cola se pone a 0 (la serpiente se ha movido)
-	Tab[snake->Pos[snake->size].fila][snake->Pos[snake->size].columna] = 0;
-	
-	snake->Pos[snake->size].fila = 0;
-	snake->Pos[snake->size].columna = 0;
-
-}
-//Interrupciones del ADC
- void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc) {
-
-     ADC_X = HAL_ADC_GetValue(&hadc1);
-	   ADC_Y = HAL_ADC_GetValue(&hadc2);
  }
- //Interrupción del botón
- void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
-	 
-	 ISR = true;
- }
- 
- //Inicio del juego
- void JuegoInit(Snake *Serpiente, uint8_t Tab[MAX_FILA][MAX_COLUMNA]){
-	   LCD_clrScr();
-	   LCD_invert(false);
-	   LCD_print("CARGANDO...", 10, 2);
-	 	 for (int i = 0; i < MAX_COLUMNA; i++){
-		 for (int j = 0; j < MAX_FILA; j++){
-			 Tab[j][i] = 0;
-		 }
-	 }
-	 Serpiente->Pos[0].fila = 10;
-	 Serpiente->Pos[0].columna = 30;
-	 Serpiente->dir = 3;
-	 Serpiente->size = 1;
-	 Tab[8][20] = 2;
-	 HAL_Delay(100);
- }
- 
- //Cambio de estado con ISR
- void Estado(Game *estado, Snake *Serpiente, uint8_t Tab[MAX_FILA][MAX_COLUMNA]){
-	   if (*estado == juego && ISR == true){
-		 *estado = pausa;
-		 ISR = false;
-	 }	
-   else if (*estado == pausa && ISR == true){
-		 *estado = juego;
-		 ISR = false;
-	 }		 	 
-    else if ((*estado == muerto || *estado == inicio) && ISR == true){
-		 JuegoInit(Serpiente, Tab);
-		 *estado = juego;
-		 ISR = false;
-	 }	
-		
- }
- 
+ //Gestión del refresc de la pantalla
  void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
   /* Prevent unused argument(s) compilation warning */
@@ -844,6 +850,19 @@ void SnakePos(uint8_t Tab[MAX_FILA][MAX_COLUMNA], Snake* snake, Game* estado) {
 
   ISTIMER = true;
 }
+
+//Interrupciones del ADC
+ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc) {
+
+     ADC_X = HAL_ADC_GetValue(&hadc1);
+	   ADC_Y = HAL_ADC_GetValue(&hadc2);
+ }
+ 
+ //Interrupción del botón
+ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
+	 
+	 ISR = true;
+ }
 /* USER CODE END 4 */
 
 /**
