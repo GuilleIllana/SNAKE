@@ -72,11 +72,12 @@ I2S_HandleTypeDef hi2s3;
 
 SPI_HandleTypeDef hspi1;
 
-TIM_HandleTypeDef htim3;
+TIM_HandleTypeDef htim4;
 
 /* USER CODE BEGIN PV */
 	bool ISR = false;
   bool ISADC = false;
+	bool ISTIMER = false;
   uint8_t ADC_X = 0;
   uint8_t ADC_Y = 0;
 /* USER CODE END PV */
@@ -89,7 +90,7 @@ static void MX_I2S3_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_ADC1_Init(void);
 static void MX_ADC2_Init(void);
-static void MX_TIM3_Init(void);
+static void MX_TIM4_Init(void);
 void MX_USB_HOST_Process(void);
 
 /* USER CODE BEGIN PFP */
@@ -150,12 +151,12 @@ int main(void)
   MX_USB_HOST_Init();
   MX_ADC1_Init();
   MX_ADC2_Init();
-  MX_TIM3_Init();
+  MX_TIM4_Init();
   /* USER CODE BEGIN 2 */
   LCD_init();
 	HAL_ADC_Start_IT(&hadc1);
 	HAL_ADC_Start_IT(&hadc2);
-  //HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
+  HAL_TIM_Base_Start_IT(&htim4);
 	
 
 	 //inicialización del vector de posiciones
@@ -169,6 +170,7 @@ int main(void)
   {
 		//Pantalla 84*48 pixeles
 		//Cabeza 4 pixeles, cada fruta aumenta en dos el tamaño de la serpiente (4 pixeles +)
+		
 
 
 
@@ -177,10 +179,14 @@ int main(void)
     MX_USB_HOST_Process();
 
     /* USER CODE BEGIN 3 */
-		//LLamada a funciones Estado (para gestión del estado) y Dibujo(Para enviar a la pantalla los datos )
-  Estado(&estado, &Serpiente, Tablero);
-	Dibujo(&estado, Tablero, &Serpiente);	 Dibujo(&estado, Tablero, &Serpiente);	
-       
+		//LLamada a Dibujo(Para enviar a la pantalla los datos ) cuando se activa la interrupción del contador
+		if (ISTIMER){
+		
+	  Dibujo(&estado, Tablero, &Serpiente);	 Dibujo(&estado, Tablero, &Serpiente);	
+	  ISTIMER = false;
+ }
+		//LLamada a funciones Estado (para gestión del estado) 
+    Estado(&estado, &Serpiente, Tablero);
   }
   /* USER CODE END 3 */
 }
@@ -442,51 +448,47 @@ static void MX_SPI1_Init(void)
 }
 
 /**
-  * @brief TIM3 Initialization Function
+  * @brief TIM4 Initialization Function
   * @param None
   * @retval None
   */
-static void MX_TIM3_Init(void)
+static void MX_TIM4_Init(void)
 {
 
-  /* USER CODE BEGIN TIM3_Init 0 */
+  /* USER CODE BEGIN TIM4_Init 0 */
 
-  /* USER CODE END TIM3_Init 0 */
+  /* USER CODE END TIM4_Init 0 */
 
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
   TIM_MasterConfigTypeDef sMasterConfig = {0};
-  TIM_OC_InitTypeDef sConfigOC = {0};
 
-  /* USER CODE BEGIN TIM3_Init 1 */
+  /* USER CODE BEGIN TIM4_Init 1 */
 
-  /* USER CODE END TIM3_Init 1 */
-  htim3.Instance = TIM3;
-  htim3.Init.Prescaler = 16;
-  htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim3.Init.Period = 100;
-  htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-  htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-  if (HAL_TIM_PWM_Init(&htim3) != HAL_OK)
+  /* USER CODE END TIM4_Init 1 */
+  htim4.Instance = TIM4;
+  htim4.Init.Prescaler = 160000;
+  htim4.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim4.Init.Period = 200;
+  htim4.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim4.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim4) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim4, &sClockSourceConfig) != HAL_OK)
   {
     Error_Handler();
   }
   sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
   sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-  if (HAL_TIMEx_MasterConfigSynchronization(&htim3, &sMasterConfig) != HAL_OK)
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim4, &sMasterConfig) != HAL_OK)
   {
     Error_Handler();
   }
-  sConfigOC.OCMode = TIM_OCMODE_PWM1;
-  sConfigOC.Pulse = 50;
-  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
-  sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
-  if (HAL_TIM_PWM_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN TIM3_Init 2 */
+  /* USER CODE BEGIN TIM4_Init 2 */
 
-  /* USER CODE END TIM3_Init 2 */
-  HAL_TIM_MspPostInit(&htim3);
+  /* USER CODE END TIM4_Init 2 */
 
 }
 
@@ -605,7 +607,7 @@ void Dibujo(Game *estado, uint8_t Tab[MAX_FILA][MAX_COLUMNA], Snake* snake){
 		case juego:
 		SnakePos(Tab, snake, estado);
     drawTablero(Tab, snake->size - 1);
-	 	HAL_Delay(100);
+	 	HAL_Delay(50);
 			break;
 		case pausa: 
 		LCD_print("PAUSA", 28, 3);
@@ -683,11 +685,11 @@ void drawTablero(uint8_t Tab[MAX_FILA][MAX_COLUMNA], uint8_t score){
 	//Dibujo del tablero
 	for (int i = 0; i < MAX_COLUMNA; i++){
 		for (int j = 0; j < MAX_FILA; j++){
-			if (Tab[j][i] == 1){
+			if (Tab[j][i] == 1 || Tab[j][i] == 3){
 				LCD_drawHLine(2*i + 2, 2*j + 10, 2);
 				LCD_drawHLine(2*i + 2, 2*j + 11, 2);
 			}
-			if (Tab[j][i] == 2){
+			else if (Tab[j][i] == 2){
 				drawFood(j, i);
 			}
 		}
@@ -753,11 +755,21 @@ void SnakePos(uint8_t Tab[MAX_FILA][MAX_COLUMNA], Snake* snake, Game* estado) {
 		columna = rand() % MAX_COLUMNA;
 		}while(Tab[fila][columna] == 1);
 		
-		Tab[fila][columna] = 2;
+		if (rand() % 50 < 5)
+		Tab[fila][columna] = 3;
+		
+		else
+			Tab[fila][columna] = 2;
 	}
 	else if(Tab[snake->Pos[0].fila][snake->Pos[0].columna] == 3) {
+		uint8_t fila, columna;
 		snake->size = snake->size + 2;
+		do {
+		fila = rand() % MAX_FILA;
+		columna = rand() % MAX_COLUMNA;
+		}while(Tab[fila][columna] == 1);
 		
+		 Tab[fila][columna] = 2;
 	}
 	//Comprobación si se come a si misma
 	for(int i = 1; i < snake->size; i++)
@@ -825,6 +837,13 @@ void SnakePos(uint8_t Tab[MAX_FILA][MAX_COLUMNA], Snake* snake, Game* estado) {
 		
  }
  
+ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+  /* Prevent unused argument(s) compilation warning */
+  UNUSED(htim);
+
+  ISTIMER = true;
+}
 /* USER CODE END 4 */
 
 /**
