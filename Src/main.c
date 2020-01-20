@@ -31,13 +31,16 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
+//Estados de la máquina de Moore
 	 typedef enum{inicio, pausa, juego, muerto} Game;
-	 	 
+	 
+//Estructura de las diferentes posiciones en el tablero	 	 
 	 typedef struct{
 	   uint8_t fila;
 		 uint8_t columna;
 	 }Posicion;
 	 
+//Estructura de la serpiente incluyendo, el tamaño, la dirección de la serpiente y el vector de posiciones 
 	 typedef struct {
 	  uint8_t size;
 	  uint8_t dir; //0 arriba, 1 derecha, 2 abajo, 3 izquierda
@@ -48,13 +51,13 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define MAX_X 81
+#define MAX_X 81  //quitando el marco del juego
 #define MAX_Y 45 //quitando el score
-#define MIN_X 2
+#define MIN_X 2 
 #define MIN_Y 10
-#define MAX_COLUMNA 40 
-#define MAX_FILA 18 
-#define MAX_SNAKE 760 //Longitud máxima de la serpiente (ocupando todo el tablero)
+#define MAX_COLUMNA 40 //Columnas de la matriz de tablero
+#define MAX_FILA 18  //Filas de la matriz de tablero
+#define MAX_SNAKE 150 //Longitud máxima de la serpiente (ocupando todo el tablero)
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -75,11 +78,13 @@ SPI_HandleTypeDef hspi1;
 TIM_HandleTypeDef htim4;
 
 /* USER CODE BEGIN PV */
-	bool ISR = false;
-  bool ISADC = false;
-	bool ISTIMER = false;
-  uint8_t ADC_X = 0;
-  uint8_t ADC_Y = 0;
+
+	bool ISR = false; //Inicialización de la interrupción del botón
+  bool ISADC = false;   //Inicialización de la interrupción de los ADC
+	bool ISTIMER = false;  //Inicialización de la interrupción del timer
+  uint8_t ADC_X = 0;  //Inicialización de variable del eje x del joystick
+  uint8_t ADC_Y = 0;  //Inicialización de la variable del eje y del joystick
+	
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -95,13 +100,13 @@ void MX_USB_HOST_Process(void);
 
 /* USER CODE BEGIN PFP */
 void drawFood(uint8_t pixelX, uint8_t pixelY); //Dibujo de la comida
-void drawTablero(uint8_t Tab[MAX_FILA][MAX_COLUMNA], uint8_t score);
-void SnakePos(uint8_t Tab[MAX_FILA][MAX_COLUMNA], Snake* snake, Game *estado);
-void Dibujo(Game *estado, uint8_t Tab[MAX_FILA][MAX_COLUMNA], Snake* snake);
-void JuegoInit(Snake *Serpiente, uint8_t Tab[MAX_FILA][MAX_COLUMNA]);
-void Estado(Game *estado, Snake *Serpiente, uint8_t Tab[MAX_FILA][MAX_COLUMNA]);
-uint8_t cambioDir(uint8_t direccion);
-void ajustePos(uint8_t Tab[MAX_FILA][MAX_COLUMNA], Snake* snake, Game *estado);
+void drawTablero(uint8_t Tab[MAX_FILA][MAX_COLUMNA], uint8_t score); //Dibujo del tablero
+void SnakePos(uint8_t Tab[MAX_FILA][MAX_COLUMNA], Snake* snake, Game *estado); //Cálculo de la posición de la serpiente
+void Dibujo(Game *estado, uint8_t Tab[MAX_FILA][MAX_COLUMNA], Snake* snake); //Dibujo de la pantalla
+void JuegoInit(Snake *Serpiente, uint8_t Tab[MAX_FILA][MAX_COLUMNA]);  //Inicialización del tablero con valores predeterminados
+void Estado(Game *estado, Snake *Serpiente, uint8_t Tab[MAX_FILA][MAX_COLUMNA]);  //Transición de estados
+uint8_t cambioDir(uint8_t direccion);  //Cálculo del cambio de dirección de la serpiente según el joystick
+void ajustePos(uint8_t Tab[MAX_FILA][MAX_COLUMNA], Snake* snake, Game *estado);  //Comprobación del estado siguiente de la serpiente
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -118,7 +123,7 @@ void ajustePos(uint8_t Tab[MAX_FILA][MAX_COLUMNA], Snake* snake, Game *estado);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-  Snake Serpiente;
+  Snake Serpiente; //Inicialización de la serpiente
 	uint8_t Tablero[MAX_FILA][MAX_COLUMNA]; //0 si vacio, 1 si serpiente, 2 si comida
 
   /* USER CODE END 1 */
@@ -184,10 +189,10 @@ int main(void)
 		//LLamada a Dibujo(Para enviar a la pantalla los datos ) cuando se activa la interrupción del contador
 		if (ISTIMER){
 		
-	  Dibujo(&estado, Tablero, &Serpiente);	 Dibujo(&estado, Tablero, &Serpiente);	
-	  ISTIMER = false;
+	  Dibujo(&estado, Tablero, &Serpiente);	 Dibujo(&estado, Tablero, &Serpiente);	//Llamada a la función de dibujo
+	  ISTIMER = false;  //Reset de la variable de interrupción
  }
-		//LLamada a funciones Estado (para gestión del estado) 
+		//Llamada a funciones Estado (para gestión del estado) 
     Estado(&estado, &Serpiente, Tablero);
   }
   /* USER CODE END 3 */
@@ -606,28 +611,31 @@ void Dibujo(Game *estado, uint8_t Tab[MAX_FILA][MAX_COLUMNA], Snake* snake){
 	  char  num[3];
 	//Elección de lo que hay que dibujar según el estado en el que nos encontramos
 	switch (*estado) {
-		
+		//Dibujo del juego
 		case juego:
 		SnakePos(Tab, snake, estado);
     drawTablero(Tab, snake->size - 1);
 	 	HAL_Delay(60);  //Control de la dificultad
 			break;
+		
+		//Dibujo del estado de pausa
 		case pausa: 
 		LCD_print("PAUSA", 28, 3);
-		
 		   break;
+		
+		//Dibujo del estado de muerto
 		case muerto: 
 			sprintf(num, "%d" ,snake->size - 1);
-		if (!ISR){
-   		LCD_clrScr();
-		  LCD_invert(true);
+		if (!ISR){ //Comprobación si se ha pulsado el botón
+   		LCD_clrScr(); //Limpieza de la pantalla
+		  LCD_invert(true); //Inversión de la pantalla
 	    LCD_print("GAME", 30, 2);
 	    LCD_print("OVER", 30, 3);
 			LCD_print("SCORE:", 20, 5);
 	    LCD_print(num, 55, 5);
       HAL_Delay(750);
 		}
-		 if (!ISR){ 
+		 if (!ISR){  //Comprobación si se ha pulsado el botón
 		  LCD_clrScr();
 		  LCD_print("JUEGAS", 25, 2);
 	    LCD_print("OTRA?", 28, 3);
@@ -651,12 +659,18 @@ void Dibujo(Game *estado, uint8_t Tab[MAX_FILA][MAX_COLUMNA], Snake* snake){
 //Dibujo de la comida
 void drawFood(uint8_t pixelX, uint8_t pixelY){
 	uint8_t x1,x2,y1,y2, x, y;
+	
+	//Paso de posición de matriz a pixel
 	x = 2*pixelY + 2;
 	y = 2*pixelX + 10;
+	
+	//Pixeles que se van a dibujar
 	x1 = x - 1;
 	x2 = x + 1;
 	y1 = y - 1;
 	y2 = y + 1;
+	
+	//Comprobación que no se activa fuera de los límites
 	if (x1 <= MAX_X)
 		LCD_setPixel(x1, y, true);
 	if (x2 <= MAX_X)
@@ -667,6 +681,7 @@ void drawFood(uint8_t pixelX, uint8_t pixelY){
 		LCD_setPixel(x, y2, true);
 	LCD_refreshArea(x1, y1, x2, y2);
 }
+
 //Dibujo del tablero
 void drawTablero(uint8_t Tab[MAX_FILA][MAX_COLUMNA], uint8_t score){
   char  num[3];
@@ -752,6 +767,7 @@ void SnakePos(uint8_t Tab[MAX_FILA][MAX_COLUMNA], Snake* snake, Game* estado) {
 			 Tab[j][i] = 0;
 		 }
 	 }
+		 //Posición inicial de la serpiente y de la comida;
 	 Serpiente->Pos[0].fila = 10;
 	 Serpiente->Pos[0].columna = 30;
 	 Serpiente->dir = 3;
@@ -819,7 +835,9 @@ void SnakePos(uint8_t Tab[MAX_FILA][MAX_COLUMNA], Snake* snake, Game* estado) {
 	 //Comprobación de comida
 	if(Tab[snake->Pos[0].fila][snake->Pos[0].columna] == 2) {
 		uint8_t fila, columna;
-		snake->size = snake->size++; 
+		snake->size = snake->size++;
+
+//Creación de comida de manera aleatoria		
 	  do {
 		fila = rand() % MAX_FILA;
 		columna = rand() % MAX_COLUMNA;
