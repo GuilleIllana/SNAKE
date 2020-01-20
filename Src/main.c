@@ -610,7 +610,7 @@ void Dibujo(Game *estado, uint8_t Tab[MAX_FILA][MAX_COLUMNA], Snake* snake){
 		case juego:
 		SnakePos(Tab, snake, estado);
     drawTablero(Tab, snake->size - 1);
-	 	HAL_Delay(50);
+	 	HAL_Delay(60);  //Control de la dificultad
 			break;
 		case pausa: 
 		LCD_print("PAUSA", 28, 3);
